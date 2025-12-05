@@ -27,3 +27,8 @@ export interface SimulationResult {
   scoreB: number;
   winProbabilityA: number;
 }
+
+export interface SimulationOptions {
+  /** Random source; defaults to Math.random. */
+  rng?: () => number;
+}
