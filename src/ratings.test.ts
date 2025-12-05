@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { expectedScore, upsetProbability, updateRatings } from "./ratings.js";
+import {
+  createTeamRating,
+  expectedScore,
+  kFactorForTeam,
+  upsetProbability,
+  updateRatings,
+  updateTeamRatings,
+} from "./ratings.js";
 
 describe("ratings", () => {
   it("gives equal teams a 50% expected score", () => {
@@ -34,5 +41,29 @@ describe("ratings", () => {
       upsetProbability(favorite, underdog) +
         expectedScore(favorite, underdog)
     ).toBeCloseTo(1);
+  });
+
+  it("uses a higher K factor for provisional teams", () => {
+    expect(kFactorForTeam(0)).toBeGreaterThan(kFactorForTeam(15));
+    expect(kFactorForTeam(15)).toBeGreaterThan(kFactorForTeam(40));
+  });
+
+  it("tracks games played and applies team-specific K factors", () => {
+    const provisional = createTeamRating(1500);
+    const established = createTeamRating(1500);
+    established.gamesPlayed = 40;
+
+    const [newProvisional, newEstablished] = updateTeamRatings(
+      provisional,
+      established,
+      80,
+      70
+    );
+
+    expect(newProvisional.gamesPlayed).toBe(1);
+    expect(newEstablished.gamesPlayed).toBe(41);
+    expect(newProvisional.rating - provisional.rating).toBeGreaterThan(
+      newEstablished.rating - established.rating
+    );
   });
 });
