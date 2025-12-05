@@ -10,6 +10,14 @@ export function expectedScore(ratingA: number, ratingB: number): number {
   return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
 }
 
+/** Probability the lower-rated team upsets the favorite. */
+export function upsetProbability(
+  favoriteRating: number,
+  underdogRating: number
+): number {
+  return expectedScore(underdogRating, favoriteRating);
+}
+
 /** Update ratings after a game; returns [newRatingA, newRatingB]. */
 export function updateRatings(
   ratingA: number,
