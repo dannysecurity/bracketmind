@@ -26,6 +26,23 @@ export interface BracketView {
   champion: TeamView | null;
 }
 
+/** Format a team for display, optionally including its tournament seed. */
+export function formatTeamLabel(
+  team: TeamView | null,
+  showSeeds = true
+): string {
+  if (!team) {
+    return "TBD";
+  }
+  if (team.isBye) {
+    return "BYE";
+  }
+  if (showSeeds && team.seed !== null) {
+    return `#${team.seed} ${team.name}`;
+  }
+  return team.name;
+}
+
 const ROUND_NAMES: Record<number, string> = {
   1: "Final",
   2: "Semifinals",

@@ -120,8 +120,26 @@ button:hover {
   font-weight: 700;
 }
 
+.team.loser {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
 .team.bye,
 .bye-note {
+  color: var(--bye);
+  font-style: italic;
+}
+
+.seed {
+  color: var(--muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.field-summary {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
   color: var(--bye);
   font-style: italic;
 }

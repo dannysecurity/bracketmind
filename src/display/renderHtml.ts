@@ -1,6 +1,14 @@
 import type { Bracket } from "../types.js";
-import { buildBracketView, type MatchView } from "./bracketView.js";
+import {
+  buildBracketView,
+  type MatchView,
+  type TeamView,
+} from "./bracketView.js";
 import { buildPredictEntries, type PredictEntry } from "./renderPredict.js";
+
+export interface HtmlRenderOptions {
+  showSeeds?: boolean;
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -10,19 +18,39 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function teamCellClass(teamName: string, match: MatchView): string {
-  if (match.winner?.name === teamName) {
+function teamCellClass(team: TeamView | null, match: MatchView): string {
+  if (!team) {
+    return "team";
+  }
+  if (team.isBye) {
+    return "team bye";
+  }
+  if (match.winner?.name === team.name) {
     return "team winner";
   }
-  if (teamName === "BYE") {
-    return "team bye";
+  if (match.winner && match.winner.name !== team.name) {
+    return "team loser";
   }
   return "team";
 }
 
-function renderMatchCard(match: MatchView): string {
-  const teamA = match.teamA?.name ?? "TBD";
-  const teamB = match.teamB?.name ?? "TBD";
+function renderTeamLabelHtml(
+  team: TeamView | null,
+  showSeeds: boolean
+): string {
+  if (!team) {
+    return "TBD";
+  }
+  if (team.isBye) {
+    return "BYE";
+  }
+  if (showSeeds && team.seed !== null) {
+    return `<span class="seed">#${team.seed}</span> ${escapeHtml(team.name)}`;
+  }
+  return escapeHtml(team.name);
+}
+
+function renderMatchCard(match: MatchView, showSeeds: boolean): string {
   const score =
     match.scoreA !== undefined && match.scoreB !== undefined
       ? `<span class="score">${match.scoreA}-${match.scoreB}</span>`
@@ -30,35 +58,57 @@ function renderMatchCard(match: MatchView): string {
 
   if (match.isByeMatch && match.winner) {
     return `<article class="match bye-match">
-      <div class="${teamCellClass(match.winner.name, match)}">${escapeHtml(match.winner.name)}</div>
-      <div class="bye-note">BYE</div>
+      <div class="${teamCellClass(match.winner, match)}">${renderTeamLabelHtml(match.winner, showSeeds)}</div>
+      <div class="bye-note">advances (BYE)</div>
     </article>`;
   }
 
   return `<article class="match">
-    <div class="${teamCellClass(teamA, match)}">${escapeHtml(teamA)}</div>
-    <div class="${teamCellClass(teamB, match)}">${escapeHtml(teamB)}</div>
+    <div class="${teamCellClass(match.teamA, match)}">${renderTeamLabelHtml(match.teamA, showSeeds)}</div>
+    <div class="${teamCellClass(match.teamB, match)}">${renderTeamLabelHtml(match.teamB, showSeeds)}</div>
     ${score}
   </article>`;
 }
 
+function renderFieldSummaryHtml(bracket: Bracket): string {
+  const byeCount = bracket.teams.filter((team) => team.name === "BYE").length;
+  if (byeCount === 0) {
+    return "";
+  }
+  const label = `${byeCount} BYE slot${byeCount === 1 ? "" : "s"} in the field`;
+  return `<p class="field-summary">${escapeHtml(label)}</p>`;
+}
+
+function renderChampionHtml(
+  champion: TeamView | null,
+  showSeeds: boolean
+): string {
+  if (!champion) {
+    return "";
+  }
+  return `<p class="champion">Champion: <strong>${renderTeamLabelHtml(champion, showSeeds)}</strong></p>`;
+}
+
 /** Render a simulated bracket as semantic HTML for the web viewer. */
-export function renderBracketHtml(bracket: Bracket): string {
+export function renderBracketHtml(
+  bracket: Bracket,
+  options: HtmlRenderOptions = {}
+): string {
+  const showSeeds = options.showSeeds ?? true;
   const view = buildBracketView(bracket);
   const columns = view.matchesByRound
     .map(
       (matches, roundIndex) => `<section class="round">
         <h3>${escapeHtml(view.roundLabels[roundIndex])}</h3>
-        ${matches.map(renderMatchCard).join("\n")}
+        ${matches.map((match) => renderMatchCard(match, showSeeds)).join("\n")}
       </section>`
     )
     .join("\n");
 
-  const champion = view.champion
-    ? `<p class="champion">Champion: <strong>${escapeHtml(view.champion.name)}</strong></p>`
-    : "";
+  const fieldSummary = renderFieldSummaryHtml(bracket);
+  const champion = renderChampionHtml(view.champion, showSeeds);
 
-  return `<div class="bracket-grid">${columns}</div>${champion}`;
+  return `<div class="bracket-grid">${columns}</div>${fieldSummary}${champion}`;
 }
 
 /** Render predict probabilities as HTML bars. */

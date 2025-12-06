@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBracket, parseTeams, simulateBracket } from "../bracket.js";
-import { buildBracketView, roundLabel } from "./bracketView.js";
+import { buildBracketView, formatTeamLabel, roundLabel } from "./bracketView.js";
 
 describe("buildBracketView", () => {
   it("labels rounds relative to the final", () => {
@@ -33,5 +33,28 @@ describe("buildBracketView", () => {
 
     expect(byeMatch).toBeDefined();
     expect(byeMatch?.winner?.name).toBe("S1");
+  });
+});
+
+describe("formatTeamLabel", () => {
+  it("includes seed prefix for ranked teams", () => {
+    expect(
+      formatTeamLabel({ name: "Duke", seed: 1, rating: 1700, isBye: false })
+    ).toBe("#1 Duke");
+  });
+
+  it("returns BYE for bye slots", () => {
+    expect(
+      formatTeamLabel({ name: "BYE", seed: null, rating: 0, isBye: true })
+    ).toBe("BYE");
+  });
+
+  it("omits seeds when disabled", () => {
+    expect(
+      formatTeamLabel(
+        { name: "Duke", seed: 1, rating: 1700, isBye: false },
+        false
+      )
+    ).toBe("Duke");
   });
 });

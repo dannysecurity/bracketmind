@@ -1,22 +1,13 @@
 import type { Bracket } from "../types.js";
-import { buildBracketView, type MatchView, type TeamView } from "./bracketView.js";
+import {
+  buildBracketView,
+  formatTeamLabel,
+  type MatchView,
+} from "./bracketView.js";
 import { ColorOptions, dim, heading, winner } from "./colors.js";
 
 export interface ListRenderOptions extends ColorOptions {
   showSeeds?: boolean;
-}
-
-function formatTeamLabel(team: TeamView | null, showSeeds: boolean): string {
-  if (!team) {
-    return "TBD";
-  }
-  if (team.isBye) {
-    return "BYE";
-  }
-  if (showSeeds && team.seed !== null) {
-    return `#${team.seed} ${team.name}`;
-  }
-  return team.name;
 }
 
 function formatMatchLine(match: MatchView, options: ListRenderOptions): string {

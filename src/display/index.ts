@@ -1,4 +1,4 @@
-export { buildBracketView, roundLabel } from "./bracketView.js";
+export { buildBracketView, formatTeamLabel, roundLabel } from "./bracketView.js";
 export type { BracketView, MatchView, TeamView } from "./bracketView.js";
 export { ansi, bar, dim, heading, winner } from "./colors.js";
 export type { ColorOptions } from "./colors.js";
@@ -24,3 +24,4 @@ export {
   renderSimulatePage,
   renderViewerPage,
 } from "./renderHtml.js";
+export type { HtmlRenderOptions } from "./renderHtml.js";

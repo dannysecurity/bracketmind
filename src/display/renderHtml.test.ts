@@ -3,6 +3,13 @@ import { createBracket, parseTeams, simulateBracket } from "../bracket.js";
 import { renderBracketHtml, renderPredictHtml } from "./renderHtml.js";
 import { buildPredictEntries } from "./renderPredict.js";
 
+function seededTeams(names: string[]) {
+  return parseTeams(names).map((team, index) => ({
+    ...team,
+    rating: 1700 - index * 50,
+  }));
+}
+
 describe("renderHtml", () => {
   it("escapes team names and marks winners", () => {
     const teams = parseTeams(["Ace<script>", "Beta", "Gamma", "Delta"]);
@@ -12,6 +19,31 @@ describe("renderHtml", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain('class="team winner"');
     expect(html).toContain("Champion:");
+  });
+
+  it("shows seed numbers in match cards and champion line", () => {
+    const teams = seededTeams(["Alpha", "Beta", "Gamma", "Delta"]);
+    const html = renderBracketHtml(simulateBracket(createBracket(teams)));
+
+    expect(html).toContain('<span class="seed">#1</span> Alpha');
+    expect(html).toContain('<span class="seed">#4</span> Delta');
+    expect(html).toMatch(/Champion: <strong><span class="seed">#\d+<\/span> /);
+  });
+
+  it("de-emphasizes losing teams in completed matches", () => {
+    const teams = seededTeams(["Alpha", "Beta", "Gamma", "Delta"]);
+    const html = renderBracketHtml(simulateBracket(createBracket(teams)));
+
+    expect(html).toContain('class="team loser"');
+  });
+
+  it("shows BYE field summary for odd-sized brackets", () => {
+    const teams = seededTeams(["S1", "S2", "S3"]);
+    const html = renderBracketHtml(simulateBracket(createBracket(teams)));
+
+    expect(html).toContain('class="field-summary"');
+    expect(html).toContain("1 BYE slot in the field");
+    expect(html).toContain("advances (BYE)");
   });
 
   it("renders predict bars with percentages", () => {
