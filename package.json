@@ -8,7 +8,7 @@
     "bracketmind": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/web && cp src/web/style.css dist/web/",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "vitest run",

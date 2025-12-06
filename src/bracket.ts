@@ -85,23 +85,20 @@ export function simulateBracket(bracket: Bracket): Bracket {
 
       if (match.teamA?.name === "BYE") {
         match.winner = match.teamB;
-        continue;
-      }
-      if (match.teamB?.name === "BYE") {
+      } else if (match.teamB?.name === "BYE") {
         match.winner = match.teamA;
-        continue;
+      } else {
+        if (!match.teamA || !match.teamB) {
+          throw new Error(`Incomplete match at round ${round}, slot ${slot}`);
+        }
+
+        const result = simulateGame(match.teamA, match.teamB);
+        match.winner = result.winner;
+        match.scoreA = result.scoreA;
+        match.scoreB = result.scoreB;
       }
 
-      if (!match.teamA || !match.teamB) {
-        throw new Error(`Incomplete match at round ${round}, slot ${slot}`);
-      }
-
-      const result = simulateGame(match.teamA, match.teamB);
-      match.winner = result.winner;
-      match.scoreA = result.scoreA;
-      match.scoreB = result.scoreB;
-
-      if (round + 1 < working.rounds) {
+      if (match.winner && round + 1 < working.rounds) {
         const nextIdx = matchIndex(round + 1, Math.floor(slot / 2), working.rounds);
         const nextMatch = working.matches[nextIdx];
         if (slot % 2 === 0) {
@@ -133,26 +130,4 @@ export function parseTeams(names: string[], baseRating = 1500): Team[] {
   }));
 }
 
-/** Render bracket lines for CLI output. */
-export function renderBracket(bracket: Bracket): string[] {
-  const lines: string[] = [];
-  for (let round = 0; round < bracket.rounds; round++) {
-    const roundMatches = bracket.matches.filter((m) => m.round === round);
-    lines.push(`Round ${round + 1}`);
-    for (const match of roundMatches) {
-      const labelA = match.teamA?.name ?? "TBD";
-      const labelB = match.teamB?.name ?? "TBD";
-      if (match.winner) {
-        const score =
-          match.scoreA !== undefined && match.scoreB !== undefined
-            ? ` (${match.scoreA}-${match.scoreB})`
-            : "";
-        lines.push(`  ${labelA} vs ${labelB} → ${match.winner.name}${score}`);
-      } else {
-        lines.push(`  ${labelA} vs ${labelB}`);
-      }
-    }
-    lines.push("");
-  }
-  return lines;
-}
+export { renderBracket } from "./display/renderList.js";

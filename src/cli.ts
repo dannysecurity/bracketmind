@@ -2,46 +2,124 @@ import {
   createBracket,
   getChampion,
   parseTeams,
-  renderBracket,
   simulateBracket,
 } from "./bracket.js";
 import { monteCarloChampionshipRates } from "./simulator.js";
+import { startServer } from "./server.js";
+import {
+  renderBracketList,
+  renderChampionLine,
+  renderFieldSummary,
+} from "./display/renderList.js";
+import { renderBracketTree } from "./display/renderTree.js";
+import { renderPredictSection } from "./display/renderPredict.js";
+import type { ColorOptions } from "./display/colors.js";
+
+export type BracketFormat = "list" | "tree";
+
+export interface SimulateOptions {
+  format?: BracketFormat;
+  color?: ColorOptions;
+}
+
+function supportsColor(): boolean {
+  return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
+}
+
+function parseSimulateArgs(args: string[]): {
+  names: string[];
+  format: BracketFormat;
+  color: ColorOptions;
+} {
+  const formatFlag = args.indexOf("--format");
+  const formatValue = formatFlag >= 0 ? args[formatFlag + 1] : "list";
+  const format: BracketFormat = formatValue === "tree" ? "tree" : "list";
+  const noColor = args.includes("--no-color");
+  const filtered = args.filter(
+    (value, index) =>
+      value !== "--format" &&
+      index !== formatFlag + 1 &&
+      value !== "--no-color"
+  );
+
+  return {
+    names: filtered.slice(1),
+    format,
+    color: { enabled: !noColor && supportsColor() },
+  };
+}
+
+function parsePredictArgs(args: string[]): {
+  names: string[];
+  iterations: number;
+  color: ColorOptions;
+} {
+  const iterationsFlag = args.indexOf("--iterations");
+  const iterations =
+    iterationsFlag >= 0 ? parseInt(args[iterationsFlag + 1], 10) : 1000;
+  const noColor = args.includes("--no-color");
+  const names = args
+    .filter(
+      (value, index) =>
+        value !== "--iterations" &&
+        index !== iterationsFlag + 1 &&
+        value !== "--no-color"
+    )
+    .slice(1);
+
+  return {
+    names,
+    iterations,
+    color: { enabled: !noColor && supportsColor() },
+  };
+}
+
+function parseServeArgs(args: string[]): number {
+  const portFlag = args.indexOf("--port");
+  const port = portFlag >= 0 ? parseInt(args[portFlag + 1], 10) : 3000;
+  return Number.isNaN(port) ? 3000 : port;
+}
 
 export function runCli(args: string[]): void {
   const command = args[0] ?? "help";
 
   switch (command) {
     case "simulate": {
-      const names = args.slice(1);
+      const { names, format, color } = parseSimulateArgs(args);
       if (names.length < 2) {
-        console.error("Usage: bracketmind simulate <team1> <team2> [...]");
+        console.error(
+          "Usage: bracketmind simulate <team1> <team2> [...] [--format list|tree] [--no-color]"
+        );
         process.exit(1);
       }
 
       const teams = parseTeams(names);
       const bracket = createBracket(teams);
       const result = simulateBracket(bracket);
-      const champion = getChampion(result);
 
       console.log("Tournament Bracket Simulation\n");
-      for (const line of renderBracket(result)) {
+      const lines =
+        format === "tree"
+          ? renderBracketTree(result, color)
+          : renderBracketList(result, color);
+      for (const line of lines) {
         console.log(line);
       }
-      console.log(`Champion: ${champion.name}`);
+
+      const fieldSummary = renderFieldSummary(result, color);
+      if (fieldSummary) {
+        console.log(fieldSummary);
+      }
+
+      console.log(renderChampionLine(result, color));
       break;
     }
 
     case "predict": {
-      const iterationsFlag = args.indexOf("--iterations");
-      const iterations =
-        iterationsFlag >= 0 ? parseInt(args[iterationsFlag + 1], 10) : 1000;
-      const names = args.filter(
-        (a, i) => a !== "--iterations" && i !== iterationsFlag + 1
-      ).slice(1);
-
+      const { names, iterations, color } = parsePredictArgs(args);
       if (names.length < 2 || Number.isNaN(iterations)) {
         console.error(
-          "Usage: bracketmind predict <team1> <team2> [...] [--iterations N]"
+          "Usage: bracketmind predict <team1> <team2> [...] [--iterations N] [--no-color]"
         );
         process.exit(1);
       }
@@ -50,16 +128,18 @@ export function runCli(args: string[]): void {
       const rates = monteCarloChampionshipRates(
         teams,
         iterations,
-        (t) => getChampion(simulateBracket(createBracket(t)))
+        (field) => getChampion(simulateBracket(createBracket(field)))
       );
 
-      console.log(`Championship probabilities (${iterations} simulations)\n`);
-      const sorted = [...rates.entries()].sort((a, b) => b[1] - a[1]);
-      for (const [id, rate] of sorted) {
-        const team = teams.find((t) => t.id === id);
-        if (team?.name === "BYE") continue;
-        console.log(`  ${team?.name ?? id}: ${(rate * 100).toFixed(1)}%`);
+      for (const line of renderPredictSection(rates, teams, iterations, color)) {
+        console.log(line);
       }
+      break;
+    }
+
+    case "serve": {
+      const port = parseServeArgs(args);
+      startServer(port);
       break;
     }
 
@@ -68,14 +148,17 @@ export function runCli(args: string[]): void {
       console.log(`bracketmind — tournament bracket simulator
 
 Commands:
-  simulate <teams...>              Run a single bracket simulation
-  predict <teams...> [--iterations N]
+  simulate <teams...> [--format list|tree] [--no-color]
+                                   Run a single bracket simulation
+  predict <teams...> [--iterations N] [--no-color]
                                    Estimate championship odds via Monte Carlo
+  serve [--port N]                 Launch the web bracket viewer (default 3000)
   help                             Show this message
 
 Examples:
-  bracketmind simulate Duke Kansas UConn Purdue
+  bracketmind simulate Duke Kansas UConn Purdue --format tree
   bracketmind predict Duke Kansas UConn --iterations 5000
+  bracketmind serve --port 3000
 `);
   }
 }
