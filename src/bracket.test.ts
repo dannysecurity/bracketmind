@@ -66,4 +66,37 @@ describe("bracket", () => {
     const champion = getChampion(result);
     expect(teams.map((t) => t.name)).toContain(champion.name);
   });
+
+  it("updates team ratings across rounds when dynamicRatings is enabled", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map(
+      (team, i) => ({ ...team, rating: 1600 - i * 50 })
+    );
+    const result = simulateBracket(createBracket(teams), {
+      dynamicRatings: true,
+    });
+
+    const playedTeams = result.teams.filter((team) => team.name !== "BYE");
+    const ratingsChanged = playedTeams.some(
+      (team, i) => team.rating !== 1600 - i * 50
+    );
+
+    expect(getChampion(result)).toBeTruthy();
+    expect(ratingsChanged).toBe(true);
+  });
+
+  it("replays identically when a fixed rng is supplied", () => {
+    const teams = parseTeams(["A", "B", "C", "D"]);
+    const rngValues = Array.from({ length: 20 }, (_, i) => (i * 17) % 100 / 100);
+    let index = 0;
+    const rng = () => rngValues[index++ % rngValues.length];
+
+    const first = simulateBracket(createBracket(teams), { rng });
+    index = 0;
+    const second = simulateBracket(createBracket(teams), { rng });
+
+    expect(getChampion(first).id).toBe(getChampion(second).id);
+    expect(first.matches.map((m) => m.scoreA)).toEqual(
+      second.matches.map((m) => m.scoreA)
+    );
+  });
 });

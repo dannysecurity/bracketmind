@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expectedMargin, simulateGame } from "./simulator.js";
+import { expectedMargin, simulateGame, createTournamentState } from "./simulator.js";
 import type { Team } from "./types.js";
 
 function team(name: string, rating: number): Team {
@@ -98,7 +98,7 @@ describe("simulateGame", () => {
 
     for (let i = 0; i < trials; i++) {
       const result = simulateGame(favorite, underdog);
-      const margin = Math.abs(result.scoreA - result.scoreB);
+      const margin = result.margin;
 
       if (result.winner.id === favorite.id) {
         favoriteMarginTotal += margin;
@@ -114,5 +114,38 @@ describe("simulateGame", () => {
     expect(favoriteMarginTotal / favoriteWins).toBeGreaterThan(
       upsetMarginTotal / upsetWins
     );
+  });
+
+  it("reports margin and upset metadata on each result", () => {
+    const favorite = team("Favorite", 1700);
+    const underdog = team("Underdog", 1500);
+
+    const expectedWin = simulateGame(favorite, underdog, {
+      rng: sequenceRng([0.1, 0.5, 0.5]),
+    });
+    expect(expectedWin.margin).toBe(expectedWin.scoreA - expectedWin.scoreB);
+    expect(expectedWin.isUpset).toBe(false);
+
+    const upset = simulateGame(favorite, underdog, {
+      rng: sequenceRng([0.99, 0.5, 0.5]),
+    });
+    expect(upset.isUpset).toBe(true);
+    expect(upset.margin).toBeGreaterThan(0);
+  });
+
+  it("updates tournament ratings when state is provided", () => {
+    const teamA = team("TeamA", 1500);
+    const teamB = team("TeamB", 1500);
+    const state = createTournamentState([teamA, teamB]);
+
+    const result = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.1, 0.5, 0.5]),
+      tournamentState: state,
+    });
+
+    expect(result.ratingDeltaA).toBeGreaterThan(0);
+    expect(result.ratingDeltaB).toBeLessThan(0);
+    expect(teamA.rating).toBeGreaterThan(1500);
+    expect(teamB.rating).toBeLessThan(1500);
   });
 });

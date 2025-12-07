@@ -30,22 +30,26 @@ function parseSimulateArgs(args: string[]): {
   names: string[];
   format: BracketFormat;
   color: ColorOptions;
+  dynamicRatings: boolean;
 } {
   const formatFlag = args.indexOf("--format");
   const formatValue = formatFlag >= 0 ? args[formatFlag + 1] : "list";
   const format: BracketFormat = formatValue === "tree" ? "tree" : "list";
   const noColor = args.includes("--no-color");
+  const dynamicRatings = args.includes("--dynamic-ratings");
   const filtered = args.filter(
     (value, index) =>
       value !== "--format" &&
       index !== formatFlag + 1 &&
-      value !== "--no-color"
+      value !== "--no-color" &&
+      value !== "--dynamic-ratings"
   );
 
   return {
     names: filtered.slice(1),
     format,
     color: { enabled: !noColor && supportsColor() },
+    dynamicRatings,
   };
 }
 
@@ -53,17 +57,20 @@ function parsePredictArgs(args: string[]): {
   names: string[];
   iterations: number;
   color: ColorOptions;
+  dynamicRatings: boolean;
 } {
   const iterationsFlag = args.indexOf("--iterations");
   const iterations =
     iterationsFlag >= 0 ? parseInt(args[iterationsFlag + 1], 10) : 1000;
   const noColor = args.includes("--no-color");
+  const dynamicRatings = args.includes("--dynamic-ratings");
   const names = args
     .filter(
       (value, index) =>
         value !== "--iterations" &&
         index !== iterationsFlag + 1 &&
-        value !== "--no-color"
+        value !== "--no-color" &&
+        value !== "--dynamic-ratings"
     )
     .slice(1);
 
@@ -71,6 +78,7 @@ function parsePredictArgs(args: string[]): {
     names,
     iterations,
     color: { enabled: !noColor && supportsColor() },
+    dynamicRatings,
   };
 }
 
@@ -85,17 +93,17 @@ export function runCli(args: string[]): void {
 
   switch (command) {
     case "simulate": {
-      const { names, format, color } = parseSimulateArgs(args);
+      const { names, format, color, dynamicRatings } = parseSimulateArgs(args);
       if (names.length < 2) {
         console.error(
-          "Usage: bracketmind simulate <team1> <team2> [...] [--format list|tree] [--no-color]"
+          "Usage: bracketmind simulate <team1> <team2> [...] [--format list|tree] [--dynamic-ratings] [--no-color]"
         );
         process.exit(1);
       }
 
       const teams = parseTeams(names);
       const bracket = createBracket(teams);
-      const result = simulateBracket(bracket);
+      const result = simulateBracket(bracket, { dynamicRatings });
 
       console.log("Tournament Bracket Simulation\n");
       const lines =
@@ -116,10 +124,10 @@ export function runCli(args: string[]): void {
     }
 
     case "predict": {
-      const { names, iterations, color } = parsePredictArgs(args);
+      const { names, iterations, color, dynamicRatings } = parsePredictArgs(args);
       if (names.length < 2 || Number.isNaN(iterations)) {
         console.error(
-          "Usage: bracketmind predict <team1> <team2> [...] [--iterations N] [--no-color]"
+          "Usage: bracketmind predict <team1> <team2> [...] [--iterations N] [--dynamic-ratings] [--no-color]"
         );
         process.exit(1);
       }
@@ -128,7 +136,10 @@ export function runCli(args: string[]): void {
       const rates = monteCarloChampionshipRates(
         teams,
         iterations,
-        (field) => getChampion(simulateBracket(createBracket(field)))
+        (field) =>
+          getChampion(
+            simulateBracket(createBracket(field), { dynamicRatings })
+          )
       );
 
       for (const line of renderPredictSection(rates, teams, iterations, color)) {
@@ -148,9 +159,9 @@ export function runCli(args: string[]): void {
       console.log(`bracketmind — tournament bracket simulator
 
 Commands:
-  simulate <teams...> [--format list|tree] [--no-color]
+  simulate <teams...> [--format list|tree] [--dynamic-ratings] [--no-color]
                                    Run a single bracket simulation
-  predict <teams...> [--iterations N] [--no-color]
+  predict <teams...> [--iterations N] [--dynamic-ratings] [--no-color]
                                    Estimate championship odds via Monte Carlo
   serve [--port N]                 Launch the web bracket viewer (default 3000)
   help                             Show this message

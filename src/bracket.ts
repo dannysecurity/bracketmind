@@ -1,6 +1,7 @@
 import { simulateGame } from "./simulator.js";
+import { createTournamentState } from "./tournamentState.js";
 import { createRating } from "./ratings.js";
-import type { Bracket, Match, Team } from "./types.js";
+import type { Bracket, BracketSimulationOptions, Match, Team } from "./types.js";
 
 function nextPowerOfTwo(n: number): number {
   return Math.pow(2, Math.ceil(Math.log2(n)));
@@ -73,8 +74,15 @@ function matchIndex(round: number, slot: number, rounds: number): number {
 }
 
 /** Play every pending match in the bracket until a champion is crowned. */
-export function simulateBracket(bracket: Bracket): Bracket {
+export function simulateBracket(
+  bracket: Bracket,
+  options: BracketSimulationOptions = {}
+): Bracket {
   const working = structuredClone(bracket);
+  const rng = options.rng;
+  const tournamentState = options.dynamicRatings
+    ? createTournamentState(working.teams)
+    : undefined;
 
   for (let round = 0; round < working.rounds; round++) {
     const slots = working.teams.length / Math.pow(2, round + 1);
@@ -92,7 +100,10 @@ export function simulateBracket(bracket: Bracket): Bracket {
           throw new Error(`Incomplete match at round ${round}, slot ${slot}`);
         }
 
-        const result = simulateGame(match.teamA, match.teamB);
+        const result = simulateGame(match.teamA, match.teamB, {
+          rng,
+          tournamentState,
+        });
         match.winner = result.winner;
         match.scoreA = result.scoreA;
         match.scoreB = result.scoreB;

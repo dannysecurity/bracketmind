@@ -1,5 +1,14 @@
 import { expectedScore } from "./ratings.js";
-import type { SimulationOptions, SimulationResult, Team } from "./types.js";
+import {
+  createTournamentState,
+  effectiveRating,
+  recordGameResult,
+} from "./tournamentState.js";
+import type {
+  SimulationOptions,
+  SimulationResult,
+  Team,
+} from "./types.js";
 
 const DEFAULT_RNG = Math.random;
 
@@ -27,6 +36,20 @@ function generateScores(
   return { scoreWinner, scoreLoser };
 }
 
+function ratingForTeam(team: Team, options: SimulationOptions): number {
+  if (options.tournamentState) {
+    return effectiveRating(team, options.tournamentState);
+  }
+  return team.rating;
+}
+
+function favoriteTeam(teamA: Team, teamB: Team, ratingA: number, ratingB: number): Team {
+  if (ratingA === ratingB) {
+    return teamA;
+  }
+  return ratingA > ratingB ? teamA : teamB;
+}
+
 /** Simulate a single game between two teams using rating-based probabilities. */
 export function simulateGame(
   teamA: Team,
@@ -34,20 +57,47 @@ export function simulateGame(
   options: SimulationOptions = {}
 ): SimulationResult {
   const rng = options.rng ?? DEFAULT_RNG;
-  const winProbabilityA = expectedScore(teamA.rating, teamB.rating);
+  const ratingA = ratingForTeam(teamA, options);
+  const ratingB = ratingForTeam(teamB, options);
+  const winProbabilityA = expectedScore(ratingA, ratingB);
   const roll = rng();
 
   const aWins = roll < winProbabilityA;
   const winner = aWins ? teamA : teamB;
   const loser = aWins ? teamB : teamA;
+  const preGameFavorite = favoriteTeam(teamA, teamB, ratingA, ratingB);
 
   const { scoreWinner, scoreLoser } = generateScores(winner, loser, rng);
+  const scoreA = aWins ? scoreWinner : scoreLoser;
+  const scoreB = aWins ? scoreLoser : scoreWinner;
+  const margin = Math.abs(scoreA - scoreB);
+  const isUpset =
+    ratingA !== ratingB && winner.id !== preGameFavorite.id;
+
+  let ratingDeltaA: number | undefined;
+  let ratingDeltaB: number | undefined;
+
+  if (options.tournamentState) {
+    const deltas = recordGameResult(
+      options.tournamentState,
+      teamA,
+      teamB,
+      scoreA,
+      scoreB
+    );
+    ratingDeltaA = deltas.ratingDeltaA;
+    ratingDeltaB = deltas.ratingDeltaB;
+  }
 
   return {
     winner,
-    scoreA: aWins ? scoreWinner : scoreLoser,
-    scoreB: aWins ? scoreLoser : scoreWinner,
+    scoreA,
+    scoreB,
     winProbabilityA,
+    margin,
+    isUpset,
+    ratingDeltaA,
+    ratingDeltaB,
   };
 }
 
@@ -55,7 +105,7 @@ export function simulateGame(
 export function monteCarloChampionshipRates(
   teams: Team[],
   iterations: number,
-  simulateBracket: (teams: Team[]) => Team
+  simulateBracketFn: (teams: Team[]) => Team
 ): Map<string, number> {
   const wins = new Map<string, number>();
   for (const team of teams) {
@@ -63,7 +113,7 @@ export function monteCarloChampionshipRates(
   }
 
   for (let i = 0; i < iterations; i++) {
-    const champion = simulateBracket(teams.map((t) => ({ ...t })));
+    const champion = simulateBracketFn(teams.map((t) => ({ ...t })));
     wins.set(champion.id, (wins.get(champion.id) ?? 0) + 1);
   }
 
@@ -73,3 +123,5 @@ export function monteCarloChampionshipRates(
   }
   return rates;
 }
+
+export { createTournamentState } from "./tournamentState.js";
