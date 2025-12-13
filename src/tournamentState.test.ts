@@ -63,7 +63,9 @@ describe("recordGameResult", () => {
     const provisionalA = team("Provisional", 1500);
     const opponentA = team("OpponentA", 1500);
     const provisionalState = createTournamentState([provisionalA, opponentA]);
-    recordGameResult(provisionalState, provisionalA, opponentA, 90, 60);
+    recordGameResult(provisionalState, provisionalA, opponentA, 90, 60, {
+      margin: 30,
+    });
     const provisionalGain = provisionalA.rating - 1500;
 
     const established = team("Established", 1500);
@@ -73,9 +75,35 @@ describe("recordGameResult", () => {
       rating: 1500,
       gamesPlayed: 40,
     });
-    recordGameResult(establishedState, established, opponentB, 90, 60);
+    recordGameResult(establishedState, established, opponentB, 90, 60, {
+      margin: 30,
+    });
     const establishedGain = established.rating - 1500;
 
     expect(provisionalGain).toBeGreaterThan(establishedGain);
+  });
+
+  it("applies larger rating swings in later bracket rounds", () => {
+    const teamA = team("TeamA", 1500);
+    const teamB = team("TeamB", 1500);
+    const earlyState = createTournamentState([teamA, teamB]);
+    recordGameResult(earlyState, teamA, teamB, 80, 70, {
+      round: 0,
+      totalRounds: 3,
+      margin: 10,
+    });
+    const earlyGain = teamA.rating - 1500;
+
+    const lateA = team("LateA", 1500);
+    const lateB = team("LateB", 1500);
+    const lateState = createTournamentState([lateA, lateB]);
+    recordGameResult(lateState, lateA, lateB, 80, 70, {
+      round: 2,
+      totalRounds: 3,
+      margin: 10,
+    });
+    const lateGain = lateA.rating - 1500;
+
+    expect(lateGain).toBeGreaterThan(earlyGain);
   });
 });

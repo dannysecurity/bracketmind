@@ -103,6 +103,8 @@ export function simulateBracket(
         const result = simulateGame(match.teamA, match.teamB, {
           rng,
           tournamentState,
+          round,
+          totalRounds: working.rounds,
         });
         match.winner = result.winner;
         match.scoreA = result.scoreA;

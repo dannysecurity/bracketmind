@@ -44,6 +44,10 @@ export interface SimulationOptions {
   rng?: () => number;
   /** When set, game outcomes use live ratings and scores update tournament state. */
   tournamentState?: TournamentState;
+  /** 0-based round index; scales Elo K-factor for later rounds. */
+  round?: number;
+  /** Total bracket rounds; used with `round` for contextual Elo updates. */
+  totalRounds?: number;
 }
 
 export interface BracketSimulationOptions {

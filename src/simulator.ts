@@ -83,7 +83,13 @@ export function simulateGame(
       teamA,
       teamB,
       scoreA,
-      scoreB
+      scoreB,
+      {
+        round: options.round,
+        totalRounds: options.totalRounds,
+        margin,
+        isUpset,
+      }
     );
     ratingDeltaA = deltas.ratingDeltaA;
     ratingDeltaB = deltas.ratingDeltaB;

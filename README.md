@@ -5,7 +5,7 @@ Tournament bracket simulator with Elo-based team ratings, probabilistic game sim
 ## Features
 
 - **Single-elimination brackets** — automatically seeds teams by rating and pads to the next power of two
-- **Elo ratings** — expected win probabilities and post-game rating updates
+- **Elo ratings** — expected win probabilities and margin-, round-, and upset-aware post-game updates
 - **Game simulation** — score generation driven by rating differential
 - **Monte Carlo predictions** — estimate championship odds across thousands of simulated tournaments
 - **CLI** — simulate a bracket or forecast outcomes from the terminal
@@ -42,7 +42,8 @@ npm test
 
 ```
 src/
-  ratings.ts     Elo expected score and rating updates
+  ratings.ts     Elo expected score and base rating math
+  eloUpdates.ts  Margin-, round-, and upset-aware tournament Elo updates
   simulator.ts   Single-game simulation and Monte Carlo helpers
   bracket.ts     Bracket construction and simulation
   display/       Shared bracket view model and CLI/HTML renderers
