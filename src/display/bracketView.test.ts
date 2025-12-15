@@ -34,6 +34,32 @@ describe("buildBracketView", () => {
     expect(byeMatch).toBeDefined();
     expect(byeMatch?.winner?.name).toBe("S1");
   });
+
+  it("computes pre-game upset chance from seed ratings", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
+      ...team,
+      rating: 1700 - index * 100,
+    }));
+    const view = buildBracketView(createBracket(teams));
+    const match = view.matchesByRound[0][0];
+    const favoriteRating = Math.max(match.teamA!.rating, match.teamB!.rating);
+    const underdogRating = Math.min(match.teamA!.rating, match.teamB!.rating);
+
+    expect(match.upsetChance).toBeCloseTo(
+      1 / (1 + Math.pow(10, (favoriteRating - underdogRating) / 400))
+    );
+  });
+
+  it("leaves upset chance null for bye matchups", () => {
+    const teams = parseTeams(["S1", "S2", "S3"]).map((team, index) => ({
+      ...team,
+      rating: 1600 - index * 100,
+    }));
+    const view = buildBracketView(createBracket(teams));
+    const byeMatch = view.matchesByRound[0].find((match) => match.isByeMatch);
+
+    expect(byeMatch?.upsetChance).toBeNull();
+  });
 });
 
 describe("formatTeamLabel", () => {

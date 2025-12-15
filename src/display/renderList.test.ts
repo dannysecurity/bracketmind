@@ -37,4 +37,15 @@ describe("renderBracketList", () => {
 
     expect(championLine).toMatch(/^Champion: #\d+ /);
   });
+
+  it("shows upset chance on unplayed matchups", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
+      ...team,
+      rating: 1700 - index * 100,
+    }));
+    const lines = renderBracketList(createBracket(teams), { enabled: false });
+
+    expect(lines.some((line) => line.includes("upset chance"))).toBe(true);
+    expect(lines.some((line) => line.includes("→"))).toBe(false);
+  });
 });

@@ -10,6 +10,10 @@ export interface ListRenderOptions extends ColorOptions {
   showSeeds?: boolean;
 }
 
+function formatUpsetChance(probability: number): string {
+  return ` (${Math.round(probability * 100)}% upset chance)`;
+}
+
 function formatMatchLine(match: MatchView, options: ListRenderOptions): string {
   const showSeeds = options.showSeeds ?? true;
   const labelA = formatTeamLabel(match.teamA, showSeeds);
@@ -29,7 +33,9 @@ function formatMatchLine(match: MatchView, options: ListRenderOptions): string {
     return `  ${labelA} vs ${labelB} → ${winner(winnerLabel, options)}${score}`;
   }
 
-  return `  ${labelA} vs ${labelB}`;
+  const upsetHint =
+    match.upsetChance !== null ? formatUpsetChance(match.upsetChance) : "";
+  return `  ${labelA} vs ${labelB}${upsetHint}`;
 }
 
 /** Render a bracket as a round-grouped list for CLI output. */

@@ -1,3 +1,4 @@
+import { upsetProbability } from "../ratings.js";
 import type { Bracket, Match, Team } from "../types.js";
 
 export interface TeamView {
@@ -17,6 +18,8 @@ export interface MatchView {
   scoreA?: number;
   scoreB?: number;
   isByeMatch: boolean;
+  /** Pre-game probability the lower-rated team wins; null for BYE or incomplete matchups. */
+  upsetChance: number | null;
 }
 
 export interface BracketView {
@@ -79,6 +82,19 @@ function toTeamView(team: Team | null, seeds: Map<string, number>): TeamView | n
   };
 }
 
+function preGameUpsetChance(
+  teamA: Team | null,
+  teamB: Team | null
+): number | null {
+  if (!teamA || !teamB || teamA.name === "BYE" || teamB.name === "BYE") {
+    return null;
+  }
+
+  const favoriteRating = Math.max(teamA.rating, teamB.rating);
+  const underdogRating = Math.min(teamA.rating, teamB.rating);
+  return upsetProbability(favoriteRating, underdogRating);
+}
+
 function toMatchView(match: Match, seeds: Map<string, number>, totalRounds: number): MatchView {
   const teamA = toTeamView(match.teamA, seeds);
   const teamB = toTeamView(match.teamB, seeds);
@@ -96,6 +112,7 @@ function toMatchView(match: Match, seeds: Map<string, number>, totalRounds: numb
     isByeMatch: Boolean(
       (teamA?.isBye && teamB && !teamB.isBye) || (teamB?.isBye && teamA && !teamA.isBye)
     ),
+    upsetChance: preGameUpsetChance(match.teamA, match.teamB),
   };
 }
 
