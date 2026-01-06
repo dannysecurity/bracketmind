@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { expectedMargin, simulateGame, createTournamentState } from "./simulator.js";
+import { expectedMargin, simulateGame, createSeededRng, createTournamentState } from "./simulator.js";
 import type { Team } from "./types.js";
 
 function team(name: string, rating: number): Team {
@@ -10,6 +10,22 @@ function sequenceRng(values: number[]): () => number {
   let index = 0;
   return () => values[index++ % values.length];
 }
+
+describe("createSeededRng", () => {
+  it("produces repeatable sequences for the same seed", () => {
+    const first = createSeededRng(42);
+    const second = createSeededRng(42);
+    const valuesA = Array.from({ length: 5 }, () => first());
+    const valuesB = Array.from({ length: 5 }, () => second());
+    expect(valuesA).toEqual(valuesB);
+  });
+
+  it("produces different sequences for different seeds", () => {
+    const a = createSeededRng(1)();
+    const b = createSeededRng(2)();
+    expect(a).not.toBe(b);
+  });
+});
 
 describe("expectedMargin", () => {
   it("gives even matchups a modest baseline margin", () => {

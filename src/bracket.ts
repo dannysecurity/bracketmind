@@ -135,12 +135,31 @@ export function getChampion(bracket: Bracket): Team {
   return winner;
 }
 
+/** Parse a team name or `Name:rating` spec from the CLI. */
+export function parseTeamSpec(
+  spec: string,
+  baseRating = 1500
+): { name: string; rating: number } {
+  const trimmed = spec.trim();
+  const match = trimmed.match(/^(.+):(\d+)$/);
+  if (match) {
+    return {
+      name: match[1].trim(),
+      rating: createRating(parseInt(match[2], 10)),
+    };
+  }
+  return { name: trimmed, rating: createRating(baseRating) };
+}
+
 export function parseTeams(names: string[], baseRating = 1500): Team[] {
-  return names.map((name, i) => ({
-    id: `team-${i}`,
-    name: name.trim(),
-    rating: createRating(baseRating),
-  }));
+  return names.map((spec, i) => {
+    const parsed = parseTeamSpec(spec, baseRating);
+    return {
+      id: `team-${i}`,
+      name: parsed.name,
+      rating: parsed.rating,
+    };
+  });
 }
 
 export { renderBracket } from "./display/renderList.js";

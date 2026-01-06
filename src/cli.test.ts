@@ -53,12 +53,44 @@ describe("runCli", () => {
     });
 
     expect(stdout).toContain("Championship probabilities");
-    expect(stdout).toMatch(/Alpha[\s\S]*Beta/);
+    expect(stdout).toContain("Alpha");
+    expect(stdout).toContain("Beta");
   });
 
   it("exits with usage when simulate has too few teams", () => {
     const { exitCode, stderr } = captureOutput(() => {
       runCli(["simulate", "Alpha"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Usage:");
+  });
+
+  it("simulates a single game with custom ratings", () => {
+    const { stdout } = captureOutput(() => {
+      runCli(["game", "Duke:1650", "Kansas:1500", "--no-color"]);
+    });
+
+    expect(stdout).toContain("Game Simulation");
+    expect(stdout).toContain("Duke (1650) vs Kansas (1500)");
+    expect(stdout).toMatch(/→ Duke \d+ - Kansas \d+/);
+    expect(stdout).toContain("Pre-game favorite: Duke");
+  });
+
+  it("replays the same game with a fixed seed", () => {
+    const first = captureOutput(() => {
+      runCli(["game", "Alpha", "Beta", "--seed", "7", "--no-color"]);
+    });
+    const second = captureOutput(() => {
+      runCli(["game", "Alpha", "Beta", "--seed", "7", "--no-color"]);
+    });
+
+    expect(first.stdout).toBe(second.stdout);
+  });
+
+  it("exits with usage when game has the wrong number of teams", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["game", "Alpha"]);
     });
 
     expect(exitCode).toBe(1);

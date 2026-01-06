@@ -1,10 +1,16 @@
 import {
   createBracket,
   getChampion,
+  parseTeamSpec,
   parseTeams,
   simulateBracket,
 } from "./bracket.js";
-import { monteCarloChampionshipRates } from "./simulator.js";
+import {
+  createSeededRng,
+  createTournamentState,
+  monteCarloChampionshipRates,
+  simulateGame,
+} from "./simulator.js";
 import { startServer } from "./server.js";
 import {
   renderBracketList,
@@ -12,6 +18,7 @@ import {
   renderFieldSummary,
 } from "./display/renderList.js";
 import { renderBracketTree } from "./display/renderTree.js";
+import { renderGameResult } from "./display/renderGameResult.js";
 import { renderPredictSection } from "./display/renderPredict.js";
 import type { ColorOptions } from "./display/colors.js";
 
@@ -88,6 +95,34 @@ function parseServeArgs(args: string[]): number {
   return Number.isNaN(port) ? 3000 : port;
 }
 
+function parseGameArgs(args: string[]): {
+  teamSpecs: string[];
+  color: ColorOptions;
+  dynamicRatings: boolean;
+  seed?: number;
+} {
+  const seedFlag = args.indexOf("--seed");
+  const seedValue = seedFlag >= 0 ? parseInt(args[seedFlag + 1], 10) : undefined;
+  const noColor = args.includes("--no-color");
+  const dynamicRatings = args.includes("--dynamic-ratings");
+  const teamSpecs = args
+    .filter(
+      (value, index) =>
+        value !== "--seed" &&
+        (seedFlag < 0 || index !== seedFlag + 1) &&
+        value !== "--no-color" &&
+        value !== "--dynamic-ratings"
+    )
+    .slice(1);
+
+  return {
+    teamSpecs,
+    color: { enabled: !noColor && supportsColor() },
+    dynamicRatings,
+    seed: seedValue !== undefined && !Number.isNaN(seedValue) ? seedValue : undefined,
+  };
+}
+
 export function runCli(args: string[]): void {
   const command = args[0] ?? "help";
 
@@ -148,6 +183,42 @@ export function runCli(args: string[]): void {
       break;
     }
 
+    case "game": {
+      const { teamSpecs, color, dynamicRatings, seed } = parseGameArgs(args);
+      if (teamSpecs.length !== 2) {
+        console.error(
+          "Usage: bracketmind game <team1> <team2> [--seed N] [--dynamic-ratings] [--no-color]"
+        );
+        process.exit(1);
+      }
+
+      const teamA = {
+        id: "team-a",
+        ...parseTeamSpec(teamSpecs[0]),
+      };
+      const teamB = {
+        id: "team-b",
+        ...parseTeamSpec(teamSpecs[1]),
+      };
+      const tournamentState = dynamicRatings
+        ? createTournamentState([teamA, teamB])
+        : undefined;
+      const rng = seed !== undefined ? createSeededRng(seed) : undefined;
+
+      const result = simulateGame(teamA, teamB, {
+        rng,
+        tournamentState,
+      });
+
+      for (const line of renderGameResult(teamA, teamB, result, {
+        ...color,
+        showRatingDeltas: dynamicRatings,
+      })) {
+        console.log(line);
+      }
+      break;
+    }
+
     case "serve": {
       const port = parseServeArgs(args);
       startServer(port);
@@ -159,6 +230,8 @@ export function runCli(args: string[]): void {
       console.log(`bracketmind — tournament bracket simulator
 
 Commands:
+  game <team1> <team2> [--seed N] [--dynamic-ratings] [--no-color]
+                                   Simulate a single head-to-head game
   simulate <teams...> [--format list|tree] [--dynamic-ratings] [--no-color]
                                    Run a single bracket simulation
   predict <teams...> [--iterations N] [--dynamic-ratings] [--no-color]
@@ -166,7 +239,10 @@ Commands:
   serve [--port N]                 Launch the web bracket viewer (default 3000)
   help                             Show this message
 
+Team names may include ratings as Name:rating (e.g. Duke:1650).
+
 Examples:
+  bracketmind game Duke:1650 Kansas:1500 --seed 42
   bracketmind simulate Duke Kansas UConn Purdue --format tree
   bracketmind predict Duke Kansas UConn --iterations 5000
   bracketmind serve --port 3000

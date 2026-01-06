@@ -12,6 +12,18 @@ import type {
 
 const DEFAULT_RNG = Math.random;
 
+/** Deterministic RNG from a numeric seed (mulberry32). */
+export function createSeededRng(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /** Expected point margin when `winner` beats `loser`, scaled by rating gap. */
 export function expectedMargin(winner: Team, loser: Team): number {
   const gap = winner.rating - loser.rating;

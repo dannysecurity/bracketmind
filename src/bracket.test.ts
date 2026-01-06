@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createBracket,
   getChampion,
+  parseTeamSpec,
   parseTeams,
   simulateBracket,
 } from "./bracket.js";
@@ -18,6 +19,15 @@ function roundOnePairings(bracket: ReturnType<typeof createBracket>): Team[][] {
 }
 
 describe("bracket", () => {
+  it("parses team specs with optional ratings", () => {
+    expect(parseTeamSpec("Duke")).toEqual({ name: "Duke", rating: 1500 });
+    expect(parseTeamSpec("Duke:1650")).toEqual({ name: "Duke", rating: 1650 });
+    expect(parseTeams(["Alpha:1600", "Beta"])).toEqual([
+      { id: "team-0", name: "Alpha", rating: 1600 },
+      { id: "team-1", name: "Beta", rating: 1500 },
+    ]);
+  });
+
   it("builds a bracket for four teams", () => {
     const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]);
     const bracket = createBracket(teams);
