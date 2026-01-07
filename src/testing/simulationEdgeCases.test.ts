@@ -7,6 +7,7 @@ import {
 } from "../bracket.js";
 import { expectedScore } from "../ratings.js";
 import {
+  createSeededRng,
   monteCarloChampionshipRates,
   simulateGame,
 } from "../simulator.js";
@@ -26,6 +27,21 @@ import {
 } from "./simulationFixtures.js";
 
 describe("simulateGame edge cases", () => {
+  it("awards the win to team A when the roll is zero and team A is favored", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const probabilityA = winProbabilityFor(teamA.rating, teamB.rating);
+
+    expect(probabilityA).toBeGreaterThan(0);
+
+    const result = simulateGame(teamA, teamB, {
+      rng: constantRng(0),
+    });
+
+    expect(result.winner).toBe(teamA);
+    expect(result.winProbabilityA).toBeCloseTo(probabilityA, 5);
+  });
+
   it("awards the win to team B when the roll equals team A's win probability", () => {
     const teamA = team("Alpha", 1600);
     const teamB = team("Beta", 1500);
@@ -136,6 +152,26 @@ describe("monteCarloChampionshipRates edge cases", () => {
       expect(field[i]).toEqual(originals[i]);
     }
   });
+
+  it("returns deterministic 1.0 and 0.0 rates for a two-team field", () => {
+    const favorite = team("Favorite", 1800);
+    const underdog = team("Underdog", 1200);
+    const alwaysFavoriteWins = () =>
+      getChampion(
+        simulateBracket(createBracket([favorite, underdog]), {
+          rng: sequenceRng([0, 0.5, 0.5]),
+        })
+      );
+
+    const rates = monteCarloChampionshipRates(
+      [favorite, underdog],
+      50,
+      alwaysFavoriteWins
+    );
+
+    expect(rates.get(favorite.id)).toBe(1);
+    expect(rates.get(underdog.id)).toBe(0);
+  });
 });
 
 describe("simulateBracket edge cases", () => {
@@ -155,6 +191,73 @@ describe("simulateBracket edge cases", () => {
     bracket.matches[0].teamA = null;
 
     expect(() => simulateBracket(bracket)).toThrow(/Incomplete match/);
+  });
+
+  it("simulates a two-team bracket in a single match", () => {
+    const teams = parseTeams(["Alpha", "Beta"]).map((entry, index) => ({
+      ...entry,
+      rating: 1600 - index * 100,
+    }));
+    const bracket = createBracket(teams);
+
+    expect(bracket.rounds).toBe(1);
+    expect(bracket.matches).toHaveLength(1);
+
+    const result = simulateBracket(bracket, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+    });
+    const finalMatch = result.matches[0];
+
+    expect(finalMatch.winner).toBeTruthy();
+    expect(finalMatch.scoreA).toBeDefined();
+    expect(finalMatch.scoreB).toBeDefined();
+    expect(getChampion(result).id).toBe(finalMatch.winner!.id);
+  });
+
+  it("does not mutate the input bracket object", () => {
+    const bracket = createBracket(parseTeams(["A", "B", "C", "D"]));
+    const snapshot = structuredClone(bracket);
+
+    simulateBracket(bracket, { rng: sequenceRng([0.1, 0.5, 0.5, 0.1, 0.5, 0.5, 0.1, 0.5, 0.5]) });
+
+    expect(bracket).toEqual(snapshot);
+  });
+
+  it("replays identically when driven by createSeededRng", () => {
+    const teams = parseTeams(["S1", "S2", "S3", "S4"]).map((entry, index) => ({
+      ...entry,
+      rating: 1650 - index * 50,
+    }));
+    const rng = createSeededRng(4242);
+
+    const first = simulateBracket(createBracket(teams), { rng });
+    const second = simulateBracket(createBracket(teams), {
+      rng: createSeededRng(4242),
+    });
+
+    expect(getChampion(first).id).toBe(getChampion(second).id);
+    for (let i = 0; i < first.matches.length; i++) {
+      expect(first.matches[i].scoreA).toBe(second.matches[i].scoreA);
+      expect(first.matches[i].scoreB).toBe(second.matches[i].scoreB);
+    }
+  });
+
+  it("leaves seed ratings unchanged when dynamicRatings is disabled", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map(
+      (entry, index) => ({ ...entry, rating: 1600 - index * 80 })
+    );
+    const startingRatings = new Map(teams.map((entry) => [entry.id, entry.rating]));
+
+    const result = simulateBracket(createBracket(teams), {
+      rng: sequenceRng([0.1, 0.5, 0.5, 0.1, 0.5, 0.5, 0.1, 0.5, 0.5]),
+    });
+
+    for (const entry of result.teams) {
+      if (entry.name === "BYE") {
+        continue;
+      }
+      expect(entry.rating).toBe(startingRatings.get(entry.id));
+    }
   });
 
   it("auto-advances BYE matches without recording scores", () => {
