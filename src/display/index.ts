@@ -17,6 +17,8 @@ export {
   renderPredictSection,
 } from "./renderPredict.js";
 export type { PredictEntry, PredictRenderOptions } from "./renderPredict.js";
+export { renderSeedingsSection } from "./renderSeedings.js";
+export type { SeedingsRenderOptions } from "./renderSeedings.js";
 export {
   renderBracketHtml,
   renderPredictHtml,

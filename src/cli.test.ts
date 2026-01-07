@@ -96,4 +96,31 @@ describe("runCli", () => {
     expect(exitCode).toBe(1);
     expect(stderr).toContain("Usage:");
   });
+
+  it("prints seedings and round-one upset probabilities", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "seedings",
+        "Duke:1650",
+        "Kansas:1600",
+        "UConn:1550",
+        "Purdue:1500",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Bracket Seedings");
+    expect(stdout).toContain("#1 Duke (1650)");
+    expect(stdout).toContain("Round 1 Matchups");
+    expect(stdout).toContain("Most likely first-round upset:");
+  });
+
+  it("exits with usage when seedings has too few teams", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["seedings", "Alpha"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Usage:");
+  });
 });
