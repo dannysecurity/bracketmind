@@ -13,6 +13,7 @@ import {
 } from "../simulator.js";
 import {
   createTournamentState,
+  effectiveRating,
   recordGameResult,
 } from "../tournamentState.js";
 import {
@@ -20,6 +21,7 @@ import {
   assertWinnerHasHigherScore,
   byeMatches,
   constantRng,
+  ratedField,
   roundOneMatches,
   sequenceRng,
   team,
@@ -104,6 +106,49 @@ describe("simulateGame edge cases", () => {
 
     expect(margin).toBeGreaterThanOrEqual(1);
   });
+
+  it("applies larger rating deltas in later rounds via simulateGame", () => {
+    const earlyA = team("EarlyA", 1500);
+    const earlyB = team("EarlyB", 1500);
+    const earlyState = createTournamentState([earlyA, earlyB]);
+    simulateGame(earlyA, earlyB, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+      tournamentState: earlyState,
+      round: 0,
+      totalRounds: 3,
+    });
+    const earlyGain = earlyA.rating - 1500;
+
+    const lateA = team("LateA", 1500);
+    const lateB = team("LateB", 1500);
+    const lateState = createTournamentState([lateA, lateB]);
+    simulateGame(lateA, lateB, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+      tournamentState: lateState,
+      round: 2,
+      totalRounds: 3,
+    });
+    const lateGain = lateA.rating - 1500;
+
+    expect(lateGain).toBeGreaterThan(earlyGain);
+  });
+
+  it("uses seed ratings for opponents missing from tournament state", () => {
+    const tracked = team("Tracked", 1600);
+    const untracked = team("Untracked", 1200);
+    const state = createTournamentState([tracked]);
+    const expectedProb = winProbabilityFor(1600, 1200);
+
+    const result = simulateGame(tracked, untracked, {
+      rng: constantRng(0.01),
+      tournamentState: state,
+    });
+
+    expect(result.winProbabilityA).toBeCloseTo(expectedProb, 5);
+    expect(effectiveRating(untracked, state)).toBe(1200);
+    expect(result.ratingDeltaA).toBe(0);
+    expect(result.ratingDeltaB).toBe(0);
+  });
 });
 
 describe("monteCarloChampionshipRates edge cases", () => {
@@ -171,6 +216,44 @@ describe("monteCarloChampionshipRates edge cases", () => {
 
     expect(rates.get(favorite.id)).toBe(1);
     expect(rates.get(underdog.id)).toBe(0);
+  });
+
+  it("throws when zero iterations are requested", () => {
+    expect(() =>
+      monteCarloChampionshipRates(field, 0, simulateChampion)
+    ).toThrow(/At least one iteration/);
+  });
+
+  it("produces different championship rates when dynamic ratings are enabled", () => {
+    let iteration = 0;
+    const championWith = (dynamicRatings: boolean) => (teams: typeof field) => {
+      const rng = createSeededRng(9000 + iteration);
+      iteration += 1;
+      return getChampion(
+        simulateBracket(createBracket(teams), { dynamicRatings, rng })
+      );
+    };
+
+    iteration = 0;
+    const staticRates = monteCarloChampionshipRates(
+      field,
+      500,
+      championWith(false)
+    );
+    iteration = 0;
+    const dynamicRates = monteCarloChampionshipRates(
+      field,
+      500,
+      championWith(true)
+    );
+
+    const differs = field.some(
+      (entry) =>
+        Math.abs(
+          (staticRates.get(entry.id) ?? 0) - (dynamicRates.get(entry.id) ?? 0)
+        ) > 0
+    );
+    expect(differs).toBe(true);
   });
 });
 
@@ -328,6 +411,51 @@ describe("simulateBracket edge cases", () => {
     expect(semifinal?.teamA?.rating ?? semifinal?.teamB?.rating).not.toBe(
       preRoundTwoRating
     );
+  });
+
+  it("simulates sixteen-team brackets with four rounds", () => {
+    const teams = ratedField(16, 1700, 20);
+    const bracket = createBracket(teams);
+
+    expect(bracket.rounds).toBe(4);
+    expect(roundOneMatches(bracket)).toHaveLength(8);
+    expect(byeMatches(bracket)).toHaveLength(0);
+
+    const result = simulateBracket(bracket, { rng: createSeededRng(999) });
+    assertBracketSimulationInvariants(result);
+    expect(getChampion(result).name).toMatch(/^S\d+$/);
+  });
+
+  it("handles seven-team fields with a single BYE auto-advance", () => {
+    const teams = parseTeams([
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "S6",
+      "S7",
+    ]).map((entry, index) => ({ ...entry, rating: 1650 - index * 40 }));
+
+    const bracket = createBracket(teams);
+    expect(byeMatches(bracket)).toHaveLength(1);
+
+    const result = simulateBracket(bracket, { rng: createSeededRng(777) });
+    assertBracketSimulationInvariants(result);
+    expect(getChampion(result).name).not.toBe("BYE");
+  });
+
+  it("handles six-team fields with two BYE auto-advances", () => {
+    const teams = parseTeams(["S1", "S2", "S3", "S4", "S5", "S6"]).map(
+      (entry, index) => ({ ...entry, rating: 1650 - index * 45 })
+    );
+
+    const bracket = createBracket(teams);
+    expect(byeMatches(bracket)).toHaveLength(2);
+
+    const result = simulateBracket(bracket);
+    assertBracketSimulationInvariants(result);
+    expect(getChampion(result).name).not.toBe("BYE");
   });
 });
 

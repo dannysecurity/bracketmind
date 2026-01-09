@@ -125,6 +125,10 @@ export function monteCarloChampionshipRates(
   iterations: number,
   simulateBracketFn: (teams: Team[]) => Team
 ): Map<string, number> {
+  if (iterations <= 0) {
+    throw new Error("At least one iteration is required");
+  }
+
   const wins = new Map<string, number>();
   for (const team of teams) {
     wins.set(team.id, 0);

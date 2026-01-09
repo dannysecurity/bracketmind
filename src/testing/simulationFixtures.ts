@@ -6,6 +6,17 @@ export function team(name: string, rating: number, id?: string): Team {
   return { id: id ?? name.toLowerCase().replace(/\s+/g, "-"), name, rating };
 }
 
+/** Build a seeded field of `count` teams with descending ratings. */
+export function ratedField(
+  count: number,
+  topRating = 1700,
+  step = 25
+): Team[] {
+  return Array.from({ length: count }, (_, index) =>
+    team(`S${index + 1}`, topRating - index * step)
+  );
+}
+
 /** Return a deterministic RNG that cycles through the given values. */
 export function sequenceRng(values: number[]): () => number {
   let index = 0;
