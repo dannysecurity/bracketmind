@@ -97,6 +97,36 @@ describe("runCli", () => {
     expect(stderr).toContain("Usage:");
   });
 
+  it("prints head-to-head forecast when --trials is set", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "game",
+        "Duke:1650",
+        "Kansas:1500",
+        "--trials",
+        "200",
+        "--seed",
+        "42",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Game Simulation");
+    expect(stdout).toContain("Head-to-head forecast (200 simulations)");
+    expect(stdout).toContain("Duke");
+    expect(stdout).toContain("Kansas");
+    expect(stdout).toContain("Upset rate:");
+  });
+
+  it("exits with usage when game --trials is zero", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["game", "Alpha", "Beta", "--trials", "0"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Usage:");
+  });
+
   it("prints seedings and round-one upset probabilities", () => {
     const { stdout } = captureOutput(() => {
       runCli([

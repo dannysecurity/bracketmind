@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { expectedMargin, simulateGame, createSeededRng, createTournamentState } from "./simulator.js";
+import {
+  expectedMargin,
+  simulateGame,
+  createSeededRng,
+  createTournamentState,
+  monteCarloGameOutcomes,
+} from "./simulator.js";
 import type { Team } from "./types.js";
 
 function team(name: string, rating: number): Team {
@@ -163,5 +169,47 @@ describe("simulateGame", () => {
     expect(result.ratingDeltaB).toBeLessThan(0);
     expect(teamA.rating).toBeGreaterThan(1500);
     expect(teamB.rating).toBeLessThan(1500);
+  });
+});
+
+describe("monteCarloGameOutcomes", () => {
+  it("returns win rates that sum to one", () => {
+    const duke = team("Duke", 1650);
+    const kansas = team("Kansas", 1500);
+    const result = monteCarloGameOutcomes(duke, kansas, 500, {
+      rng: createSeededRng(99),
+    });
+
+    expect(result.winRateA + result.winRateB).toBeCloseTo(1, 10);
+    expect(result.iterations).toBe(500);
+    expect(result.sampleResult.winner).toBeDefined();
+  });
+
+  it("favors the higher-rated team over many trials", () => {
+    const favorite = team("Favorite", 1700);
+    const underdog = team("Underdog", 1400);
+    const result = monteCarloGameOutcomes(favorite, underdog, 3000);
+
+    expect(result.winRateA).toBeGreaterThan(result.winRateB);
+    expect(result.analyticalWinRateA).toBeGreaterThan(0.5);
+  });
+
+  it("is deterministic with a fixed seed", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const first = monteCarloGameOutcomes(teamA, teamB, 100, {
+      rng: createSeededRng(42),
+    });
+    const second = monteCarloGameOutcomes(teamA, teamB, 100, {
+      rng: createSeededRng(42),
+    });
+
+    expect(first).toEqual(second);
+  });
+
+  it("throws when zero trials are requested", () => {
+    expect(() =>
+      monteCarloGameOutcomes(team("A", 1500), team("B", 1500), 0)
+    ).toThrow(/At least one iteration/);
   });
 });

@@ -6,7 +6,7 @@ Tournament bracket simulator with Elo-based team ratings, probabilistic game sim
 
 - **Single-elimination brackets** — automatically seeds teams by rating and pads to the next power of two
 - **Elo ratings** — expected win probabilities and margin-, round-, and upset-aware post-game updates
-- **Game simulation** — score generation driven by rating differential
+- **Game simulation** — score generation driven by rating differential; head-to-head Monte Carlo forecasts via `game --trials`
 - **Monte Carlo predictions** — estimate championship odds across thousands of simulated tournaments
 - **Analytical upset analysis** — path-weighted upset probabilities for every bracket round
 - **CLI** — simulate a bracket or forecast outcomes from the terminal
@@ -20,6 +20,7 @@ npm install
 npm run build
 npm start simulate Duke Kansas UConn Purdue -- --format tree
 npm start predict Duke Kansas UConn Purdue --iterations 2000
+npm start game Duke:1650 Kansas:1500 --trials 5000 --seed 42
 npm start upsets Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
 npm start serve -- --port 3000
 ```
@@ -35,6 +36,7 @@ npm test
 
 | Command | Description |
 |---------|-------------|
+| `game <team1> <team2> [--seed N] [--trials N] [--no-color]` | Simulate one game or forecast head-to-head odds (default 1 trial) |
 | `simulate <teams...> [--format list\|tree] [--no-color]` | Run one full bracket and print results |
 | `predict <teams...> [--iterations N] [--no-color]` | Championship probability estimates (default 1000 runs) |
 | `seedings <teams...> [--no-color]` | Show rating-based seeds and round-one upset odds |

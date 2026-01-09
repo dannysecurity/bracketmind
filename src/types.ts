@@ -56,3 +56,18 @@ export interface BracketSimulationOptions {
   /** Track and update team ratings as the bracket progresses. */
   dynamicRatings?: boolean;
 }
+
+/** Aggregated statistics from repeated head-to-head game simulations. */
+export interface GameMonteCarloResult {
+  iterations: number;
+  winRateA: number;
+  winRateB: number;
+  upsetRate: number;
+  avgMargin: number;
+  avgScoreA: number;
+  avgScoreB: number;
+  /** Elo expected win rate for team A before any simulated games. */
+  analyticalWinRateA: number;
+  /** Outcome of the first simulated game in the batch. */
+  sampleResult: SimulationResult;
+}

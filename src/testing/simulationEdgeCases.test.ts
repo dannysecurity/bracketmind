@@ -9,6 +9,7 @@ import { expectedScore } from "../ratings.js";
 import {
   createSeededRng,
   monteCarloChampionshipRates,
+  monteCarloGameOutcomes,
   simulateGame,
 } from "../simulator.js";
 import {
@@ -254,6 +255,36 @@ describe("monteCarloChampionshipRates edge cases", () => {
         ) > 0
     );
     expect(differs).toBe(true);
+  });
+});
+
+describe("monteCarloGameOutcomes edge cases", () => {
+  it("does not mutate the original team objects between iterations", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const originals = [{ ...teamA }, { ...teamB }];
+
+    monteCarloGameOutcomes(teamA, teamB, 25, {
+      rng: createSeededRng(11),
+    });
+
+    expect(teamA).toEqual(originals[0]);
+    expect(teamB).toEqual(originals[1]);
+  });
+
+  it("tracks rating updates independently on each dynamic-ratings trial", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+
+    const result = monteCarloGameOutcomes(teamA, teamB, 10, {
+      rng: createSeededRng(5),
+      tournamentState: state,
+    });
+
+    expect(result.winRateA + result.winRateB).toBeCloseTo(1, 10);
+    expect(teamA.rating).toBe(1500);
+    expect(teamB.rating).toBe(1500);
   });
 });
 

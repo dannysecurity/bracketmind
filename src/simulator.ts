@@ -5,6 +5,7 @@ import {
   recordGameResult,
 } from "./tournamentState.js";
 import type {
+  GameMonteCarloResult,
   SimulationOptions,
   SimulationResult,
   Team,
@@ -116,6 +117,73 @@ export function simulateGame(
     isUpset,
     ratingDeltaA,
     ratingDeltaB,
+  };
+}
+
+function cloneTeam(team: Team): Team {
+  return { ...team };
+}
+
+/** Run many head-to-head simulations and aggregate win, score, and upset rates. */
+export function monteCarloGameOutcomes(
+  teamA: Team,
+  teamB: Team,
+  iterations: number,
+  options: SimulationOptions = {}
+): GameMonteCarloResult {
+  if (iterations <= 0) {
+    throw new Error("At least one iteration is required");
+  }
+
+  const rng = options.rng ?? DEFAULT_RNG;
+  const ratingA = ratingForTeam(teamA, options);
+  const ratingB = ratingForTeam(teamB, options);
+  const analyticalWinRateA = expectedScore(ratingA, ratingB);
+
+  let winsA = 0;
+  let upsets = 0;
+  let marginTotal = 0;
+  let scoreATotal = 0;
+  let scoreBTotal = 0;
+  let sampleResult: SimulationResult | undefined;
+
+  for (let i = 0; i < iterations; i++) {
+    const simTeamA = cloneTeam(teamA);
+    const simTeamB = cloneTeam(teamB);
+    const simOptions: SimulationOptions = {
+      ...options,
+      rng,
+      tournamentState: options.tournamentState
+        ? createTournamentState([simTeamA, simTeamB])
+        : undefined,
+    };
+
+    const result = simulateGame(simTeamA, simTeamB, simOptions);
+    if (sampleResult === undefined) {
+      sampleResult = result;
+    }
+
+    if (result.winner.id === teamA.id) {
+      winsA++;
+    }
+    if (result.isUpset) {
+      upsets++;
+    }
+    marginTotal += result.margin;
+    scoreATotal += result.scoreA;
+    scoreBTotal += result.scoreB;
+  }
+
+  return {
+    iterations,
+    winRateA: winsA / iterations,
+    winRateB: (iterations - winsA) / iterations,
+    upsetRate: upsets / iterations,
+    avgMargin: marginTotal / iterations,
+    avgScoreA: scoreATotal / iterations,
+    avgScoreB: scoreBTotal / iterations,
+    analyticalWinRateA,
+    sampleResult: sampleResult!,
   };
 }
 

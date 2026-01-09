@@ -9,6 +9,7 @@ import {
   createSeededRng,
   createTournamentState,
   monteCarloChampionshipRates,
+  monteCarloGameOutcomes,
   simulateGame,
 } from "./simulator.js";
 import { startServer } from "./server.js";
@@ -19,6 +20,7 @@ import {
 } from "./display/renderList.js";
 import { renderBracketTree } from "./display/renderTree.js";
 import { renderGameResult } from "./display/renderGameResult.js";
+import { renderGameMonteCarloSummary } from "./display/renderGameMonteCarlo.js";
 import { renderPredictSection } from "./display/renderPredict.js";
 import {
   renderSeasonHeader,
@@ -172,9 +174,13 @@ function parseGameArgs(args: string[]): {
   color: ColorOptions;
   dynamicRatings: boolean;
   seed?: number;
+  trials: number;
 } {
   const seedFlag = args.indexOf("--seed");
   const seedValue = seedFlag >= 0 ? parseInt(args[seedFlag + 1], 10) : undefined;
+  const trialsFlag = args.indexOf("--trials");
+  const trialsValue =
+    trialsFlag >= 0 ? parseInt(args[trialsFlag + 1], 10) : 1;
   const noColor = args.includes("--no-color");
   const dynamicRatings = args.includes("--dynamic-ratings");
   const teamSpecs = args
@@ -182,6 +188,8 @@ function parseGameArgs(args: string[]): {
       (value, index) =>
         value !== "--seed" &&
         (seedFlag < 0 || index !== seedFlag + 1) &&
+        value !== "--trials" &&
+        (trialsFlag < 0 || index !== trialsFlag + 1) &&
         value !== "--no-color" &&
         value !== "--dynamic-ratings"
     )
@@ -192,6 +200,7 @@ function parseGameArgs(args: string[]): {
     color: { enabled: !noColor && supportsColor() },
     dynamicRatings,
     seed: seedValue !== undefined && !Number.isNaN(seedValue) ? seedValue : undefined,
+    trials: Number.isNaN(trialsValue) ? 1 : trialsValue,
   };
 }
 
@@ -256,10 +265,10 @@ export function runCli(args: string[]): void {
     }
 
     case "game": {
-      const { teamSpecs, color, dynamicRatings, seed } = parseGameArgs(args);
-      if (teamSpecs.length !== 2) {
+      const { teamSpecs, color, dynamicRatings, seed, trials } = parseGameArgs(args);
+      if (teamSpecs.length !== 2 || trials <= 0) {
         console.error(
-          "Usage: bracketmind game <team1> <team2> [--seed N] [--dynamic-ratings] [--no-color]"
+          "Usage: bracketmind game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--no-color]"
         );
         process.exit(1);
       }
@@ -276,11 +285,28 @@ export function runCli(args: string[]): void {
         ? createTournamentState([teamA, teamB])
         : undefined;
       const rng = seed !== undefined ? createSeededRng(seed) : undefined;
-
-      const result = simulateGame(teamA, teamB, {
+      const simulationOptions = {
         rng,
         tournamentState,
-      });
+      };
+
+      if (trials > 1) {
+        const forecast = monteCarloGameOutcomes(teamA, teamB, trials, simulationOptions);
+
+        for (const line of renderGameResult(teamA, teamB, forecast.sampleResult, {
+          ...color,
+          showRatingDeltas: dynamicRatings,
+        })) {
+          console.log(line);
+        }
+
+        for (const line of renderGameMonteCarloSummary(teamA, teamB, forecast, color)) {
+          console.log(line);
+        }
+        break;
+      }
+
+      const result = simulateGame(teamA, teamB, simulationOptions);
 
       for (const line of renderGameResult(teamA, teamB, result, {
         ...color,
@@ -405,7 +431,7 @@ export function runCli(args: string[]): void {
       console.log(`bracketmind — tournament bracket simulator
 
 Commands:
-  game <team1> <team2> [--seed N] [--dynamic-ratings] [--no-color]
+  game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--no-color]
                                    Simulate a single head-to-head game
   simulate <teams...> [--format list|tree] [--dynamic-ratings] [--no-color]
                                    Run a single bracket simulation
@@ -428,6 +454,7 @@ Team names may include ratings as Name:rating (e.g. Duke:1650).
 
 Examples:
   bracketmind game Duke:1650 Kansas:1500 --seed 42
+  bracketmind game Duke:1650 Kansas:1500 --trials 5000 --seed 42
   bracketmind simulate Duke Kansas UConn Purdue --format tree
   bracketmind predict Duke Kansas UConn --iterations 5000
   bracketmind seedings Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
