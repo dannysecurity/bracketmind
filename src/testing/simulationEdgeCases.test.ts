@@ -22,6 +22,9 @@ import {
   assertWinnerHasHigherScore,
   byeMatches,
   constantRng,
+  expectedByeCount,
+  finalMatch,
+  matchesInRound,
   ratedField,
   roundOneMatches,
   sequenceRng,
@@ -71,6 +74,49 @@ describe("simulateGame edge cases", () => {
     const bWins = simulateGame(teamA, teamB, { rng: constantRng(0.51) });
     expect(bWins.winner).toBe(teamB);
     expect(bWins.isUpset).toBe(false);
+
+    const tieBreak = simulateGame(teamA, teamB, { rng: constantRng(0.5) });
+    expect(tieBreak.winner).toBe(teamB);
+    expect(tieBreak.isUpset).toBe(false);
+  });
+
+  it("never flags a favorite win as an upset at extreme rating gaps", () => {
+    const favorite = team("Favorite", 2400);
+    const longshot = team("Longshot", 800);
+
+    const result = simulateGame(favorite, longshot, {
+      rng: sequenceRng([0, 0.5, 0.5]),
+    });
+
+    expect(result.winner).toBe(favorite);
+    expect(result.isUpset).toBe(false);
+    expect(result.winProbabilityA).toBeGreaterThan(0.99);
+  });
+
+  it("flags a longshot win as an upset when the outcome roll favors them", () => {
+    const favorite = team("Favorite", 2400);
+    const longshot = team("Longshot", 800);
+    const probabilityA = winProbabilityFor(favorite.rating, longshot.rating);
+
+    const result = simulateGame(favorite, longshot, {
+      rng: sequenceRng([probabilityA, 0.5, 0.5]),
+    });
+
+    expect(result.winner).toBe(longshot);
+    expect(result.isUpset).toBe(true);
+  });
+
+  it("keeps generated scores within the expected floor and baseline ranges", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+
+    const result = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0, 0]),
+    });
+
+    expect(result.scoreA).toBeGreaterThanOrEqual(68);
+    expect(result.scoreB).toBeGreaterThanOrEqual(55);
+    assertWinnerHasHigherScore(result, teamA);
   });
 
   it("clamps loser scores at 55 when the projected margin is very large", () => {
@@ -150,6 +196,23 @@ describe("simulateGame edge cases", () => {
     expect(result.ratingDeltaA).toBe(0);
     expect(result.ratingDeltaB).toBe(0);
   });
+
+  it("returns zero deltas when neither team is tracked in tournament state", () => {
+    const tracked = team("Tracked", 1600);
+    const ghostA = team("GhostA", 1500);
+    const ghostB = team("GhostB", 1400);
+    const state = createTournamentState([tracked]);
+
+    const result = simulateGame(ghostA, ghostB, {
+      rng: constantRng(0.01),
+      tournamentState: state,
+    });
+
+    expect(result.ratingDeltaA).toBe(0);
+    expect(result.ratingDeltaB).toBe(0);
+    expect(ghostA.rating).toBe(1500);
+    expect(ghostB.rating).toBe(1400);
+  });
 });
 
 describe("monteCarloChampionshipRates edge cases", () => {
@@ -225,6 +288,26 @@ describe("monteCarloChampionshipRates edge cases", () => {
     ).toThrow(/At least one iteration/);
   });
 
+  it("throws when negative iterations are requested", () => {
+    expect(() =>
+      monteCarloChampionshipRates(field, -5, simulateChampion)
+    ).toThrow(/At least one iteration/);
+  });
+
+  it("keeps championship rates normalized when dynamic ratings are enabled", () => {
+    let iteration = 0;
+    const rates = monteCarloChampionshipRates(field, 250, (teams) => {
+      const rng = createSeededRng(6000 + iteration);
+      iteration += 1;
+      return getChampion(
+        simulateBracket(createBracket(teams), { dynamicRatings: true, rng })
+      );
+    });
+    const total = [...rates.values()].reduce((sum, rate) => sum + rate, 0);
+
+    expect(total).toBeCloseTo(1, 10);
+  });
+
   it("produces different championship rates when dynamic ratings are enabled", () => {
     let iteration = 0;
     const championWith = (dynamicRatings: boolean) => (teams: typeof field) => {
@@ -285,6 +368,54 @@ describe("monteCarloGameOutcomes edge cases", () => {
     expect(result.winRateA + result.winRateB).toBeCloseTo(1, 10);
     expect(teamA.rating).toBe(1500);
     expect(teamB.rating).toBe(1500);
+  });
+
+  it("throws when negative iterations are requested", () => {
+    expect(() =>
+      monteCarloGameOutcomes(team("A", 1500), team("B", 1500), -1)
+    ).toThrow(/At least one iteration/);
+  });
+
+  it("returns a degenerate win rate for a single iteration", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+
+    const result = monteCarloGameOutcomes(teamA, teamB, 1, {
+      rng: createSeededRng(77),
+    });
+
+    expect(result.winRateA + result.winRateB).toBe(1);
+    expect([0, 1]).toContain(result.winRateA);
+    expect(result.sampleResult.winner.id).toBe(
+      result.winRateA === 1 ? teamA.id : teamB.id
+    );
+  });
+
+  it("uses the first iteration as sampleResult across longer runs", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const seed = 808;
+
+    const single = monteCarloGameOutcomes(teamA, teamB, 1, {
+      rng: createSeededRng(seed),
+    });
+    const batch = monteCarloGameOutcomes(teamA, teamB, 40, {
+      rng: createSeededRng(seed),
+    });
+
+    expect(batch.sampleResult).toEqual(single.sampleResult);
+  });
+
+  it("converges toward the analytical win rate over many trials", () => {
+    const teamA = team("Alpha", 1650);
+    const teamB = team("Beta", 1500);
+
+    const result = monteCarloGameOutcomes(teamA, teamB, 5000, {
+      rng: createSeededRng(314),
+    });
+
+    expect(result.winRateA).toBeGreaterThan(result.analyticalWinRateA - 0.08);
+    expect(result.winRateA).toBeLessThan(result.analyticalWinRateA + 0.08);
   });
 });
 
@@ -487,6 +618,59 @@ describe("simulateBracket edge cases", () => {
     const result = simulateBracket(bracket);
     assertBracketSimulationInvariants(result);
     expect(getChampion(result).name).not.toBe("BYE");
+  });
+
+  it("propagates semifinal winners into the correct final slots", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map(
+      (entry, index) => ({ ...entry, rating: 1600 - index * 100 })
+    );
+    const bracket = createBracket(teams);
+
+    const result = simulateBracket(bracket, {
+      rng: sequenceRng([
+        0.01, 0.5, 0.5,
+        0.99, 0.5, 0.5,
+        0.01, 0.5, 0.5,
+      ]),
+    });
+
+    const semifinals = matchesInRound(result, 0);
+    const championship = finalMatch(result);
+
+    expect(championship.teamA?.id).toBe(semifinals[0].winner?.id);
+    expect(championship.teamB?.id).toBe(semifinals[1].winner?.id);
+  });
+
+  it.each([5, 9, 10, 12])(
+    "simulates %i-team fields with the expected BYE padding",
+    (teamCount) => {
+      const teams = ratedField(teamCount);
+      const bracket = createBracket(teams);
+
+      expect(byeMatches(bracket)).toHaveLength(expectedByeCount(teamCount));
+      expect(bracket.teams).toHaveLength(
+        Math.pow(2, Math.ceil(Math.log2(teamCount)))
+      );
+
+      const result = simulateBracket(bracket, {
+        rng: createSeededRng(1000 + teamCount),
+      });
+      assertBracketSimulationInvariants(result);
+      expect(getChampion(result).name).not.toBe("BYE");
+    }
+  );
+
+  it("simulates thirty-two-team brackets with five rounds", () => {
+    const teams = ratedField(32, 1800, 15);
+    const bracket = createBracket(teams);
+
+    expect(bracket.rounds).toBe(5);
+    expect(roundOneMatches(bracket)).toHaveLength(16);
+    expect(byeMatches(bracket)).toHaveLength(0);
+
+    const result = simulateBracket(bracket, { rng: createSeededRng(32000) });
+    assertBracketSimulationInvariants(result);
+    expect(getChampion(result).name).toMatch(/^S\d+$/);
   });
 });
 

@@ -45,6 +45,28 @@ export function byeMatches(bracket: Bracket): Match[] {
   );
 }
 
+/** All matches in a given round (0-based). */
+export function matchesInRound(bracket: Bracket, round: number): Match[] {
+  return bracket.matches.filter((match) => match.round === round);
+}
+
+/** The championship match (last round, slot 0). */
+export function finalMatch(bracket: Bracket): Match {
+  const match = bracket.matches.find(
+    (entry) => entry.round === bracket.rounds - 1 && entry.slot === 0
+  );
+  if (!match) {
+    throw new Error(`No final match found for ${bracket.rounds}-round bracket`);
+  }
+  return match;
+}
+
+/** BYE placeholders added when padding a field to the next power of two. */
+export function expectedByeCount(teamCount: number): number {
+  const target = Math.pow(2, Math.ceil(Math.log2(teamCount)));
+  return target - teamCount;
+}
+
 /** Assert the recorded winner has the higher box score. */
 export function assertWinnerHasHigherScore(
   result: SimulationResult,
