@@ -20,8 +20,19 @@ import {
 import { renderBracketTree } from "./display/renderTree.js";
 import { renderGameResult } from "./display/renderGameResult.js";
 import { renderPredictSection } from "./display/renderPredict.js";
+import {
+  renderSeasonHeader,
+  renderSeasonPredictionComparison,
+  renderSeasonRatingReplay,
+} from "./display/renderSeason.js";
 import { renderSeedingsSection } from "./display/renderSeedings.js";
 import { renderUpsetsSection } from "./display/renderUpsets.js";
+import {
+  compareSeasonPredictions,
+  loadSeasonBracket,
+  parseSeasonFile,
+  replaySeasonRatings,
+} from "./season/index.js";
 import type { ColorOptions } from "./display/colors.js";
 
 export type BracketFormat = "list" | "tree";
@@ -121,6 +132,39 @@ function parseServeArgs(args: string[]): number {
   const portFlag = args.indexOf("--port");
   const port = portFlag >= 0 ? parseInt(args[portFlag + 1], 10) : 3000;
   return Number.isNaN(port) ? 3000 : port;
+}
+
+function parseImportArgs(args: string[]): {
+  subcommand: string;
+  path?: string;
+  format: BracketFormat;
+  iterations: number;
+  color: ColorOptions;
+} {
+  const subcommand = args[1] ?? "";
+  const formatFlag = args.indexOf("--format");
+  const formatValue = formatFlag >= 0 ? args[formatFlag + 1] : "list";
+  const format: BracketFormat = formatValue === "tree" ? "tree" : "list";
+  const iterationsFlag = args.indexOf("--iterations");
+  const iterations =
+    iterationsFlag >= 0 ? parseInt(args[iterationsFlag + 1], 10) : 1000;
+  const noColor = args.includes("--no-color");
+  const filtered = args.filter(
+    (value, index) =>
+      value !== "--format" &&
+      (formatFlag < 0 || index !== formatFlag + 1) &&
+      value !== "--iterations" &&
+      (iterationsFlag < 0 || index !== iterationsFlag + 1) &&
+      value !== "--no-color"
+  );
+
+  return {
+    subcommand,
+    path: filtered[2],
+    format,
+    iterations: Number.isNaN(iterations) ? 1000 : iterations,
+    color: { enabled: !noColor && supportsColor() },
+  };
 }
 
 function parseGameArgs(args: string[]): {
@@ -285,6 +329,77 @@ export function runCli(args: string[]): void {
       break;
     }
 
+    case "import": {
+      const { subcommand, path, format, iterations, color } = parseImportArgs(args);
+
+      if (!path) {
+        console.error(
+          "Usage: bracketmind import <season|ratings|compare> <path.json> [--format list|tree] [--iterations N] [--no-color]"
+        );
+        process.exit(1);
+      }
+
+      let doc;
+      try {
+        doc = parseSeasonFile(path);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to load season fixture: ${message}`);
+        process.exit(1);
+      }
+
+      switch (subcommand) {
+        case "season": {
+          const bracket = loadSeasonBracket(doc);
+          for (const line of renderSeasonHeader(doc, color)) {
+            console.log(line);
+          }
+          const lines =
+            format === "tree"
+              ? renderBracketTree(bracket, color)
+              : renderBracketList(bracket, color);
+          for (const line of lines) {
+            console.log(line);
+          }
+          const fieldSummary = renderFieldSummary(bracket, color);
+          if (fieldSummary) {
+            console.log(fieldSummary);
+          }
+          console.log(renderChampionLine(bracket, color));
+          break;
+        }
+
+        case "ratings": {
+          const { deltas } = replaySeasonRatings(doc);
+          for (const line of renderSeasonHeader(doc, color)) {
+            console.log(line);
+          }
+          for (const line of renderSeasonRatingReplay(deltas, color)) {
+            console.log(line);
+          }
+          break;
+        }
+
+        case "compare": {
+          const comparison = compareSeasonPredictions(doc, iterations);
+          for (const line of renderSeasonHeader(doc, color)) {
+            console.log(line);
+          }
+          for (const line of renderSeasonPredictionComparison(comparison, doc, color)) {
+            console.log(line);
+          }
+          break;
+        }
+
+        default:
+          console.error(
+            "Usage: bracketmind import <season|ratings|compare> <path.json> [--format list|tree] [--iterations N] [--no-color]"
+          );
+          process.exit(1);
+      }
+      break;
+    }
+
     case "help":
     default:
       console.log(`bracketmind — tournament bracket simulator
@@ -300,6 +415,12 @@ Commands:
                                    Show rating-based seeds and round 1 upset odds
   upsets <teams...> [--no-color]
                                    Analyze upset probabilities for every round
+  import season <path.json> [--format list|tree] [--no-color]
+                                   Load a historical season fixture and display results
+  import ratings <path.json> [--no-color]
+                                   Replay recorded games and show post-tournament Elo shifts
+  import compare <path.json> [--iterations N] [--no-color]
+                                   Compare pre-tournament Monte Carlo odds to actual champion
   serve [--port N]                 Launch the web bracket viewer (default 3000)
   help                             Show this message
 
@@ -311,6 +432,8 @@ Examples:
   bracketmind predict Duke Kansas UConn --iterations 5000
   bracketmind seedings Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
   bracketmind upsets Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
+  bracketmind import season fixtures/seasons/2024-east-mini.json --format tree
+  bracketmind import compare fixtures/seasons/2023-midwest-final-four.json --iterations 500
   bracketmind serve --port 3000
 `);
   }

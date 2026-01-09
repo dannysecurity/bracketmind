@@ -149,4 +149,59 @@ describe("runCli", () => {
     expect(exitCode).toBe(1);
     expect(stderr).toContain("Usage:");
   });
+
+  it("imports and displays a historical season fixture", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "import",
+        "season",
+        "fixtures/seasons/2024-east-mini.json",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Historical Season Import");
+    expect(stdout).toContain("2024 NCAA East Region");
+    expect(stdout).toContain("Champion:");
+    expect(stdout).toContain("UConn");
+  });
+
+  it("replays season ratings from a fixture", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "import",
+        "ratings",
+        "fixtures/seasons/2023-midwest-final-four.json",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Post-Tournament Rating Changes");
+    expect(stdout).toContain("Purdue:");
+  });
+
+  it("compares predictions against actual champion", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "import",
+        "compare",
+        "fixtures/seasons/2023-midwest-final-four.json",
+        "--iterations",
+        "50",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Predictions vs Actual");
+    expect(stdout).toContain("Actual champion: Purdue");
+  });
+
+  it("exits with usage when import path is missing", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["import", "season"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Usage:");
+  });
 });

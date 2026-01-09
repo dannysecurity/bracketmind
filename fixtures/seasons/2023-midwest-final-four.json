@@ -1,0 +1,40 @@
+{
+  "id": "2023-midwest-final-four",
+  "name": "2023 Midwest Final Four (4-team)",
+  "year": 2023,
+  "teams": [
+    { "id": "houston", "name": "Houston", "seed": 1, "rating": 1705 },
+    { "id": "texas", "name": "Texas", "seed": 2, "rating": 1650 },
+    { "id": "xavier", "name": "Xavier", "seed": 3, "rating": 1595 },
+    { "id": "purdue", "name": "Purdue", "seed": 4, "rating": 1680 }
+  ],
+  "games": [
+    {
+      "round": 0,
+      "slot": 0,
+      "teamAId": "houston",
+      "teamBId": "purdue",
+      "scoreA": 68,
+      "scoreB": 71,
+      "winnerId": "purdue"
+    },
+    {
+      "round": 0,
+      "slot": 1,
+      "teamAId": "texas",
+      "teamBId": "xavier",
+      "scoreA": 79,
+      "scoreB": 72,
+      "winnerId": "texas"
+    },
+    {
+      "round": 1,
+      "slot": 0,
+      "teamAId": "purdue",
+      "teamBId": "texas",
+      "scoreA": 80,
+      "scoreB": 75,
+      "winnerId": "purdue"
+    }
+  ]
+}
