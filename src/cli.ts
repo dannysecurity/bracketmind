@@ -21,6 +21,7 @@ import { renderBracketTree } from "./display/renderTree.js";
 import { renderGameResult } from "./display/renderGameResult.js";
 import { renderPredictSection } from "./display/renderPredict.js";
 import { renderSeedingsSection } from "./display/renderSeedings.js";
+import { renderUpsetsSection } from "./display/renderUpsets.js";
 import type { ColorOptions } from "./display/colors.js";
 
 export type BracketFormat = "list" | "tree";
@@ -91,6 +92,19 @@ function parsePredictArgs(args: string[]): {
 }
 
 function parseSeedingsArgs(args: string[]): {
+  names: string[];
+  color: ColorOptions;
+} {
+  const noColor = args.includes("--no-color");
+  const names = args.filter((value) => value !== "--no-color").slice(1);
+
+  return {
+    names,
+    color: { enabled: !noColor && supportsColor() },
+  };
+}
+
+function parseUpsetsArgs(args: string[]): {
   names: string[];
   color: ColorOptions;
 } {
@@ -249,6 +263,22 @@ export function runCli(args: string[]): void {
       break;
     }
 
+    case "upsets": {
+      const { names, color } = parseUpsetsArgs(args);
+      if (names.length < 2) {
+        console.error(
+          "Usage: bracketmind upsets <team1> <team2> [...] [--no-color]"
+        );
+        process.exit(1);
+      }
+
+      const teams = parseTeams(names);
+      for (const line of renderUpsetsSection(teams, color)) {
+        console.log(line);
+      }
+      break;
+    }
+
     case "serve": {
       const port = parseServeArgs(args);
       startServer(port);
@@ -268,6 +298,8 @@ Commands:
                                    Estimate championship odds via Monte Carlo
   seedings <teams...> [--no-color]
                                    Show rating-based seeds and round 1 upset odds
+  upsets <teams...> [--no-color]
+                                   Analyze upset probabilities for every round
   serve [--port N]                 Launch the web bracket viewer (default 3000)
   help                             Show this message
 
@@ -278,6 +310,7 @@ Examples:
   bracketmind simulate Duke Kansas UConn Purdue --format tree
   bracketmind predict Duke Kansas UConn --iterations 5000
   bracketmind seedings Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
+  bracketmind upsets Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
   bracketmind serve --port 3000
 `);
   }

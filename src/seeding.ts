@@ -1,11 +1,10 @@
 import { createBracket } from "./bracket.js";
-import { upsetProbability } from "./ratings.js";
+import { matchupUpsetProbability } from "./probability/matchup.js";
+import { buildSeedMap, buildSeededTeams } from "./probability/seeds.js";
+import type { SeededTeam } from "./probability/seeds.js";
 import type { Bracket, Team } from "./types.js";
 
-export interface SeededTeam {
-  seed: number;
-  team: Team;
-}
+export type { SeededTeam };
 
 export interface RoundOneMatchup {
   slot: number;
@@ -16,36 +15,6 @@ export interface RoundOneMatchup {
   /** Probability the lower-rated team wins; null for BYE matchups. */
   upsetProbability: number | null;
   isByeMatch: boolean;
-}
-
-function buildSeedMap(teams: Team[]): Map<string, number> {
-  const realTeams = teams.filter((team) => team.name !== "BYE");
-  const ranked = [...realTeams].sort((a, b) => b.rating - a.rating);
-  const seeds = new Map<string, number>();
-  ranked.forEach((team, index) => {
-    seeds.set(team.id, index + 1);
-  });
-  return seeds;
-}
-
-function matchupUpsetProbability(teamA: Team, teamB: Team): number | null {
-  if (teamA.name === "BYE" || teamB.name === "BYE") {
-    return null;
-  }
-
-  const favoriteRating = Math.max(teamA.rating, teamB.rating);
-  const underdogRating = Math.min(teamA.rating, teamB.rating);
-  return upsetProbability(favoriteRating, underdogRating);
-}
-
-/** Rank teams by rating and assign tournament seeds (1 = highest rated). */
-export function buildSeededTeams(teams: Team[]): SeededTeam[] {
-  const realTeams = teams.filter((team) => team.name !== "BYE");
-  const ranked = [...realTeams].sort((a, b) => b.rating - a.rating);
-  return ranked.map((team, index) => ({
-    seed: index + 1,
-    team,
-  }));
 }
 
 /** Return round-one pairings with pre-game upset probabilities. */
@@ -101,3 +70,5 @@ export function mostLikelyUpset(
     current.upsetProbability! > best.upsetProbability! ? current : best
   );
 }
+
+export { buildSeededTeams };

@@ -1,5 +1,7 @@
-import { upsetProbability } from "../ratings.js";
+import { matchupUpsetProbability } from "../probability/matchup.js";
+import { buildSeedMap } from "../probability/seeds.js";
 import type { Bracket, Match, Team } from "../types.js";
+import { roundLabel } from "./roundLabels.js";
 
 export interface TeamView {
   name: string;
@@ -46,28 +48,7 @@ export function formatTeamLabel(
   return team.name;
 }
 
-const ROUND_NAMES: Record<number, string> = {
-  1: "Final",
-  2: "Semifinals",
-  3: "Quarterfinals",
-  4: "Round of 16",
-  5: "Round of 32",
-};
-
-export function roundLabel(round: number, totalRounds: number): string {
-  const roundsFromFinal = totalRounds - round;
-  return ROUND_NAMES[roundsFromFinal] ?? `Round ${round + 1}`;
-}
-
-function buildSeedMap(teams: Team[]): Map<string, number> {
-  const realTeams = teams.filter((team) => team.name !== "BYE");
-  const ranked = [...realTeams].sort((a, b) => b.rating - a.rating);
-  const seeds = new Map<string, number>();
-  ranked.forEach((team, index) => {
-    seeds.set(team.id, index + 1);
-  });
-  return seeds;
-}
+export { roundLabel } from "./roundLabels.js";
 
 function toTeamView(team: Team | null, seeds: Map<string, number>): TeamView | null {
   if (!team) {
@@ -86,13 +67,10 @@ function preGameUpsetChance(
   teamA: Team | null,
   teamB: Team | null
 ): number | null {
-  if (!teamA || !teamB || teamA.name === "BYE" || teamB.name === "BYE") {
+  if (!teamA || !teamB) {
     return null;
   }
-
-  const favoriteRating = Math.max(teamA.rating, teamB.rating);
-  const underdogRating = Math.min(teamA.rating, teamB.rating);
-  return upsetProbability(favoriteRating, underdogRating);
+  return matchupUpsetProbability(teamA, teamB);
 }
 
 function toMatchView(match: Match, seeds: Map<string, number>, totalRounds: number): MatchView {

@@ -123,4 +123,30 @@ describe("runCli", () => {
     expect(exitCode).toBe(1);
     expect(stderr).toContain("Usage:");
   });
+
+  it("prints tournament-wide upset analysis", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "upsets",
+        "Duke:1650",
+        "Kansas:1600",
+        "UConn:1550",
+        "Purdue:1500",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Tournament Upset Landscape");
+    expect(stdout).toContain("Semifinals");
+    expect(stdout).toContain("Most Likely Upset");
+  });
+
+  it("exits with usage when upsets has too few teams", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["upsets", "Alpha"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Usage:");
+  });
 });
