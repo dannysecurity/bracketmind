@@ -1,5 +1,12 @@
 import { expectedScore } from "../ratings.js";
-import type { Bracket, Match, SimulationResult, Team } from "../types.js";
+import { simulateGame } from "../simulator.js";
+import type {
+  Bracket,
+  GameMonteCarloResult,
+  Match,
+  SimulationResult,
+  Team,
+} from "../types.js";
 
 /** Build a team for simulation tests. */
 export function team(name: string, rating: number, id?: string): Team {
@@ -79,6 +86,54 @@ export function assertWinnerHasHigherScore(
       `Winner ${result.winner.name} scored ${winnerScore}, loser scored ${loserScore}`
     );
   }
+}
+
+/** Non-BYE matches a team actually played (has recorded scores). */
+export function playedMatchesForTeam(bracket: Bracket, teamId: string): Match[] {
+  return bracket.matches.filter(
+    (match) =>
+      match.scoreA !== undefined &&
+      (match.teamA?.id === teamId || match.teamB?.id === teamId)
+  );
+}
+
+/** Manually aggregate head-to-head stats for cross-checking Monte Carlo output. */
+export function computeGameOutcomeAggregates(
+  teamA: Team,
+  teamB: Team,
+  iterations: number,
+  rng: () => number
+): Pick<
+  GameMonteCarloResult,
+  "winRateA" | "winRateB" | "upsetRate" | "avgMargin" | "avgScoreA" | "avgScoreB"
+> {
+  let winsA = 0;
+  let upsets = 0;
+  let marginTotal = 0;
+  let scoreATotal = 0;
+  let scoreBTotal = 0;
+
+  for (let i = 0; i < iterations; i++) {
+    const result = simulateGame({ ...teamA }, { ...teamB }, { rng });
+    if (result.winner.id === teamA.id) {
+      winsA++;
+    }
+    if (result.isUpset) {
+      upsets++;
+    }
+    marginTotal += result.margin;
+    scoreATotal += result.scoreA;
+    scoreBTotal += result.scoreB;
+  }
+
+  return {
+    winRateA: winsA / iterations,
+    winRateB: (iterations - winsA) / iterations,
+    upsetRate: upsets / iterations,
+    avgMargin: marginTotal / iterations,
+    avgScoreA: scoreATotal / iterations,
+    avgScoreB: scoreBTotal / iterations,
+  };
 }
 
 /** Assert every simulated non-BYE match has valid scores and a winner. */
