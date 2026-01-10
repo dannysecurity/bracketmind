@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBracket, parseTeams, simulateBracket } from "../bracket.js";
-import { buildBracketView, formatTeamLabel, roundLabel } from "./bracketView.js";
+import { buildBracketView, formatTeamLabel, formatUpsetChance, roundLabel } from "./bracketView.js";
 
 describe("buildBracketView", () => {
   it("labels rounds relative to the final", () => {
@@ -59,6 +59,12 @@ describe("buildBracketView", () => {
     const byeMatch = view.matchesByRound[0].find((match) => match.isByeMatch);
 
     expect(byeMatch?.upsetChance).toBeNull();
+  });
+});
+
+describe("formatUpsetChance", () => {
+  it("rounds probability to a whole percentage", () => {
+    expect(formatUpsetChance(0.237)).toBe("24% upset chance");
   });
 });
 

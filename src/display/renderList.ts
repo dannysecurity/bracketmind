@@ -2,7 +2,9 @@ import type { Bracket } from "../types.js";
 import {
   buildBracketView,
   formatTeamLabel,
+  formatUpsetChance,
   type MatchView,
+  type TeamView,
 } from "./bracketView.js";
 import { ColorOptions, dim, heading, winner } from "./colors.js";
 
@@ -10,14 +12,24 @@ export interface ListRenderOptions extends ColorOptions {
   showSeeds?: boolean;
 }
 
-function formatUpsetChance(probability: number): string {
-  return ` (${Math.round(probability * 100)}% upset chance)`;
+function formatTeamWithOutcome(
+  team: TeamView | null,
+  match: MatchView,
+  showSeeds: boolean,
+  options: ListRenderOptions
+): string {
+  const label = formatTeamLabel(team, showSeeds);
+  if (!match.winner || !team || team.isBye) {
+    return label;
+  }
+  if (match.winner.name === team.name) {
+    return winner(label, options);
+  }
+  return dim(label, options);
 }
 
 function formatMatchLine(match: MatchView, options: ListRenderOptions): string {
   const showSeeds = options.showSeeds ?? true;
-  const labelA = formatTeamLabel(match.teamA, showSeeds);
-  const labelB = formatTeamLabel(match.teamB, showSeeds);
 
   if (match.isByeMatch && match.winner) {
     const advancing = formatTeamLabel(match.winner, showSeeds);
@@ -25,6 +37,8 @@ function formatMatchLine(match: MatchView, options: ListRenderOptions): string {
   }
 
   if (match.winner) {
+    const labelA = formatTeamWithOutcome(match.teamA, match, showSeeds, options);
+    const labelB = formatTeamWithOutcome(match.teamB, match, showSeeds, options);
     const winnerLabel = formatTeamLabel(match.winner, showSeeds);
     const score =
       match.scoreA !== undefined && match.scoreB !== undefined
@@ -34,8 +48,8 @@ function formatMatchLine(match: MatchView, options: ListRenderOptions): string {
   }
 
   const upsetHint =
-    match.upsetChance !== null ? formatUpsetChance(match.upsetChance) : "";
-  return `  ${labelA} vs ${labelB}${upsetHint}`;
+    match.upsetChance !== null ? ` (${formatUpsetChance(match.upsetChance)})` : "";
+  return `  ${formatTeamLabel(match.teamA, showSeeds)} vs ${formatTeamLabel(match.teamB, showSeeds)}${upsetHint}`;
 }
 
 /** Render a bracket as a round-grouped list for CLI output. */

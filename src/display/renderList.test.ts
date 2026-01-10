@@ -48,4 +48,16 @@ describe("renderBracketList", () => {
     expect(lines.some((line) => line.includes("upset chance"))).toBe(true);
     expect(lines.some((line) => line.includes("→"))).toBe(false);
   });
+
+  it("de-emphasizes losing teams in completed matches when color is enabled", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
+      ...team,
+      rating: 1700 - index * 50,
+    }));
+    const lines = renderBracketList(simulateBracket(createBracket(teams)), {
+      enabled: true,
+    });
+
+    expect(lines.some((line) => line.includes("\x1b[2m"))).toBe(true);
+  });
 });

@@ -27,4 +27,28 @@ describe("renderBracketTree", () => {
       expect(tree).toContain(name);
     }
   });
+
+  it("shows first-round scores on the winning team row", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]);
+    const tree = renderBracketTree(simulateBracket(createBracket(teams)), {
+      enabled: false,
+    }).join("\n");
+
+    expect(tree).toMatch(/\(\d+-\d+\)/);
+  });
+
+  it("auto-sizes columns for long team names", () => {
+    const teams = parseTeams([
+      "Very Long Team Name A",
+      "B",
+      "Very Long Team Name C",
+      "D",
+    ]);
+    const tree = renderBracketTree(simulateBracket(createBracket(teams)), {
+      enabled: false,
+    }).join("\n");
+
+    expect(tree).toContain("Very Long Team Name A");
+    expect(tree).not.toContain("Very Long Team Na…");
+  });
 });

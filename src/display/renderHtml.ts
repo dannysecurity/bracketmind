@@ -1,6 +1,7 @@
 import type { Bracket } from "../types.js";
 import {
   buildBracketView,
+  formatUpsetChance,
   type MatchView,
   type TeamView,
 } from "./bracketView.js";
@@ -50,11 +51,19 @@ function renderTeamLabelHtml(
   return escapeHtml(team.name);
 }
 
+function renderUpsetChanceHtml(probability: number | null): string {
+  if (probability === null) {
+    return "";
+  }
+  return `<span class="upset-chance">${escapeHtml(formatUpsetChance(probability))}</span>`;
+}
+
 function renderMatchCard(match: MatchView, showSeeds: boolean): string {
   const score =
     match.scoreA !== undefined && match.scoreB !== undefined
       ? `<span class="score">${match.scoreA}-${match.scoreB}</span>`
       : "";
+  const upsetChance = !match.winner ? renderUpsetChanceHtml(match.upsetChance) : "";
 
   if (match.isByeMatch && match.winner) {
     return `<article class="match bye-match">
@@ -67,6 +76,7 @@ function renderMatchCard(match: MatchView, showSeeds: boolean): string {
     <div class="${teamCellClass(match.teamA, match)}">${renderTeamLabelHtml(match.teamA, showSeeds)}</div>
     <div class="${teamCellClass(match.teamB, match)}">${renderTeamLabelHtml(match.teamB, showSeeds)}</div>
     ${score}
+    ${upsetChance}
   </article>`;
 }
 

@@ -31,6 +31,11 @@ export interface BracketView {
   champion: TeamView | null;
 }
 
+/** Format pre-game upset probability for display in list, tree, and web views. */
+export function formatUpsetChance(probability: number): string {
+  return `${Math.round(probability * 100)}% upset chance`;
+}
+
 /** Format a team for display, optionally including its tournament seed. */
 export function formatTeamLabel(
   team: TeamView | null,

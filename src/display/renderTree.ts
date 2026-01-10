@@ -1,5 +1,5 @@
 import type { Bracket } from "../types.js";
-import { buildBracketView, type MatchView } from "./bracketView.js";
+import { buildBracketView, type BracketView, type MatchView } from "./bracketView.js";
 import { ColorOptions, dim, heading, winner } from "./colors.js";
 
 export interface TreeRenderOptions extends ColorOptions {
@@ -51,7 +51,47 @@ function formatTeamName(match: MatchView, side: "A" | "B", width: number, option
 
   const label = team.seed !== null ? `#${team.seed} ${team.name}` : team.name;
   const isWinner = Boolean(match.winner && team.name === match.winner.name);
-  return padName(label, width, options, isWinner);
+  const padded = padName(label, width, options, isWinner);
+  if (match.winner && !isWinner) {
+    return dim(padded, options);
+  }
+  return padded;
+}
+
+function formatOpeningRoundTeam(
+  match: MatchView,
+  side: "A" | "B",
+  width: number,
+  options: ColorOptions
+): string {
+  const name = formatTeamName(match, side, width, options);
+  if (!match.winner || match.scoreA === undefined || match.scoreB === undefined) {
+    return name;
+  }
+
+  const team = side === "A" ? match.teamA : match.teamB;
+  if (team && match.winner.name === team.name) {
+    return name + scoreSuffix(match);
+  }
+  return name;
+}
+
+function computeNameWidth(view: BracketView, minWidth = 14): number {
+  let maxLen = minWidth;
+
+  for (const round of view.matchesByRound) {
+    for (const match of round) {
+      for (const team of [match.teamA, match.teamB, match.winner]) {
+        if (!team || team.isBye) {
+          continue;
+        }
+        const label = team.seed !== null ? `#${team.seed} ${team.name}` : team.name;
+        maxLen = Math.max(maxLen, label.length);
+      }
+    }
+  }
+
+  return maxLen;
 }
 
 function formatWinnerName(match: MatchView, width: number, options: ColorOptions): string {
@@ -92,7 +132,7 @@ export function renderBracketTree(
   options: TreeRenderOptions = { enabled: false }
 ): string[] {
   const view = buildBracketView(bracket);
-  const nameWidth = options.nameWidth ?? 14;
+  const nameWidth = options.nameWidth ?? computeNameWidth(view);
   const connectorWidth = 4;
   const columnWidth = nameWidth + connectorWidth;
   const output: string[] = [];
@@ -118,8 +158,8 @@ export function renderBracketTree(
       const midRow = displayRow(mid);
 
       if (round === 0) {
-        setLine(grid, topRow, column, formatTeamName(match, "A", nameWidth, options));
-        setLine(grid, bottomRow, column, formatTeamName(match, "B", nameWidth, options));
+        setLine(grid, topRow, column, formatOpeningRoundTeam(match, "A", nameWidth, options));
+        setLine(grid, bottomRow, column, formatOpeningRoundTeam(match, "B", nameWidth, options));
         setLine(grid, topRow, column + nameWidth, "─┐");
         setLine(grid, bottomRow, column + nameWidth, "─┘");
         for (let row = topRow + 1; row < bottomRow; row++) {

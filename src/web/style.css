@@ -149,6 +149,14 @@ button:hover {
   color: var(--muted);
 }
 
+.upset-chance {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .champion {
   margin-top: 1.5rem;
   font-size: 1.1rem;

@@ -46,6 +46,17 @@ describe("renderHtml", () => {
     expect(html).toContain("advances (BYE)");
   });
 
+  it("shows upset chance on unplayed matchups", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
+      ...team,
+      rating: 1700 - index * 100,
+    }));
+    const html = renderBracketHtml(createBracket(teams));
+
+    expect(html).toContain('class="upset-chance"');
+    expect(html).toContain("upset chance");
+  });
+
   it("renders predict bars with percentages", () => {
     const teams = parseTeams(["Alpha", "Beta"]);
     const entries = buildPredictEntries(
