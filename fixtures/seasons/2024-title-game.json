@@ -1,0 +1,20 @@
+{
+  "id": "2024-title-game",
+  "name": "2024 NCAA Championship (title game)",
+  "year": 2024,
+  "teams": [
+    { "id": "uconn", "name": "UConn", "seed": 1, "rating": 1720 },
+    { "id": "purdue", "name": "Purdue", "seed": 2, "rating": 1705 }
+  ],
+  "games": [
+    {
+      "round": 0,
+      "slot": 0,
+      "teamAId": "uconn",
+      "teamBId": "purdue",
+      "scoreA": 75,
+      "scoreB": 60,
+      "winnerId": "uconn"
+    }
+  ]
+}

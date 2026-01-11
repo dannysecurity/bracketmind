@@ -83,6 +83,17 @@ describe("loadSeasonBracket", () => {
     expect(getSeasonChampion(doc).name).toBe("Purdue");
   });
 
+  it("hydrates a minimal two-team championship fixture", () => {
+    const doc = loadFixture("2024-title-game.json");
+    const bracket = loadSeasonBracket(doc);
+
+    expect(bracket.matches).toHaveLength(1);
+    expect(bracket.matches[0].teamA?.name).toBe("UConn");
+    expect(bracket.matches[0].teamB?.name).toBe("Purdue");
+    assertBracketSimulationInvariants(bracket);
+    expect(getSeasonChampion(doc).name).toBe("UConn");
+  });
+
   it("throws when game teams do not match bracket placement", () => {
     const doc = loadFixture("2024-east-mini.json");
     const bracket = createBracketFromSeason(doc);
@@ -135,7 +146,11 @@ describe("preGameUpsetProbability", () => {
 
 describe("round-trip fixture integrity", () => {
   it("preserves JSON fixtures through parse and stringify", () => {
-    for (const file of ["2024-east-mini.json", "2023-midwest-final-four.json"]) {
+    for (const file of [
+      "2024-east-mini.json",
+      "2023-midwest-final-four.json",
+      "2024-title-game.json",
+    ]) {
       const raw = readFileSync(join(FIXTURES, file), "utf8");
       const doc = parseSeasonJson(raw);
       expect(doc.id).toBeTruthy();
