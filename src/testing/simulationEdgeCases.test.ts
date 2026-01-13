@@ -258,6 +258,80 @@ describe("simulateGame edge cases", () => {
     expect(upsetMargin).toBeGreaterThanOrEqual(1);
     expect(upsetMargin).toBeLessThan(favoriteMargin);
   });
+
+  it("uses live effective ratings after prior games in the same tournament state", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+
+    simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+      tournamentState: state,
+    });
+
+    const liveA = effectiveRating(teamA, state);
+    const liveB = effectiveRating(teamB, state);
+    expect(liveA).toBeGreaterThan(liveB);
+
+    const followUp = simulateGame(teamA, teamB, {
+      rng: constantRng(0.01),
+      tournamentState: state,
+    });
+
+    expect(followUp.winProbabilityA).toBeCloseTo(
+      winProbabilityFor(liveA, liveB),
+      5
+    );
+    expect(followUp.winProbabilityA).toBeGreaterThan(0.5);
+  });
+
+  it("grants a larger rating boost to an underdog upset than a comparable favorite win", () => {
+    const probabilityA = winProbabilityFor(1700, 1500);
+    const scoreRolls = [0.5, 0.5];
+
+    const favoritePair = [team("Favorite", 1700), team("Underdog", 1500)];
+    const favoriteState = createTournamentState(favoritePair);
+    simulateGame(favoritePair[0], favoritePair[1], {
+      rng: sequenceRng([0.01, ...scoreRolls]),
+      tournamentState: favoriteState,
+    });
+    const favoriteGain = favoritePair[0].rating - 1700;
+
+    const upsetPair = [team("Favorite", 1700), team("Underdog", 1500)];
+    const upsetState = createTournamentState(upsetPair);
+    simulateGame(upsetPair[0], upsetPair[1], {
+      rng: sequenceRng([probabilityA, ...scoreRolls]),
+      tournamentState: upsetState,
+    });
+    const upsetGain = upsetPair[1].rating - 1500;
+
+    expect(upsetGain).toBeGreaterThan(favoriteGain);
+  });
+
+  it("preserves at least a one-point margin when score noise would collapse the spread", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+
+    const result = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0, 0]),
+    });
+
+    expect(result.margin).toBe(1);
+    assertWinnerHasHigherScore(result, teamA);
+  });
+});
+
+describe("expectedMargin edge cases", () => {
+  it("never returns less than one regardless of rating gap direction", () => {
+    const heavyFavorite = team("Goliath", 2400);
+    const longshot = team("David", 800);
+
+    expect(expectedMargin(heavyFavorite, longshot)).toBeGreaterThanOrEqual(1);
+    expect(expectedMargin(longshot, heavyFavorite)).toBeGreaterThanOrEqual(1);
+    expect(expectedMargin(team("EvenA", 1500), team("EvenB", 1500))).toBeGreaterThanOrEqual(
+      1
+    );
+  });
 });
 
 describe("monteCarloChampionshipRates edge cases", () => {
@@ -401,6 +475,18 @@ describe("monteCarloChampionshipRates edge cases", () => {
     expect(losers).toHaveLength(field.length - 1);
     expect([...rates.values()].reduce((sum, rate) => sum + rate, 0)).toBe(1);
   });
+
+  it("records championship rates for a champion returned outside the input field", () => {
+    const outsider = team("Outsider", 1700);
+
+    const rates = monteCarloChampionshipRates(field, 20, () => outsider);
+
+    expect(rates.get(outsider.id)).toBe(1);
+    expect(rates.get(field[0].id)).toBe(0);
+    expect(rates.get(field[1].id)).toBe(0);
+    expect(rates.size).toBe(field.length + 1);
+    expect([...rates.values()].reduce((sum, rate) => sum + rate, 0)).toBe(1);
+  });
 });
 
 describe("monteCarloGameOutcomes edge cases", () => {
@@ -516,6 +602,31 @@ describe("monteCarloGameOutcomes edge cases", () => {
     expect(state.ratings.get(teamB.id)?.rating).toBe(startingRatingB);
     expect(teamA.rating).toBe(1500);
     expect(teamB.rating).toBe(1500);
+  });
+
+  it("derives analyticalWinRateA from pre-modified tournament state ratings", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+
+    simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+      tournamentState: state,
+    });
+
+    const liveA = effectiveRating(teamA, state);
+    const liveB = effectiveRating(teamB, state);
+
+    const result = monteCarloGameOutcomes(teamA, teamB, 5, {
+      rng: createSeededRng(99),
+      tournamentState: state,
+    });
+
+    expect(result.analyticalWinRateA).toBeCloseTo(
+      winProbabilityFor(liveA, liveB),
+      5
+    );
+    expect(result.analyticalWinRateA).not.toBeCloseTo(0.5, 5);
   });
 });
 
