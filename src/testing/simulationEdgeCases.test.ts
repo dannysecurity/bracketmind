@@ -285,6 +285,29 @@ describe("simulateGame edge cases", () => {
     expect(followUp.winProbabilityA).toBeGreaterThan(0.5);
   });
 
+  it("projects score margins from live tournament ratings, not stale team objects", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+    state.ratings.get(teamA.id)!.rating = 1700;
+    teamA.rating = 1500;
+
+    const seedResult = simulateGame(team("Alpha", 1500), team("Beta", 1500), {
+      rng: sequenceRng([0.01, 0.5, 0]),
+    });
+
+    const liveResult = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0.5, 0]),
+      tournamentState: state,
+    });
+
+    expect(liveResult.winner).toBe(teamA);
+    expect(liveResult.margin).toBeGreaterThan(seedResult.margin);
+    expect(liveResult.margin).toBe(
+      expectedMargin(team("Favorite", 1700), team("Underdog", 1500))
+    );
+  });
+
   it("grants a larger rating boost to an underdog upset than a comparable favorite win", () => {
     const probabilityA = winProbabilityFor(1700, 1500);
     const scoreRolls = [0.5, 0.5];

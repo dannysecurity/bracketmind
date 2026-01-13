@@ -25,23 +25,27 @@ export function createSeededRng(seed: number): () => number {
   };
 }
 
-/** Expected point margin when `winner` beats `loser`, scaled by rating gap. */
-export function expectedMargin(winner: Team, loser: Team): number {
-  const gap = winner.rating - loser.rating;
+function marginFromRatings(winnerRating: number, loserRating: number): number {
+  const gap = winnerRating - loserRating;
   const isUpset = gap < 0;
   const gapFactor = Math.abs(gap) / 40;
   const base = 5 + gapFactor * (isUpset ? 0.35 : 1);
   return Math.max(1, Math.round(base));
 }
 
+/** Expected point margin when `winner` beats `loser`, scaled by rating gap. */
+export function expectedMargin(winner: Team, loser: Team): number {
+  return marginFromRatings(winner.rating, loser.rating);
+}
+
 function generateScores(
-  winner: Team,
-  loser: Team,
+  winnerRating: number,
+  loserRating: number,
   rng: () => number
 ): { scoreWinner: number; scoreLoser: number } {
   const margin = Math.max(
     1,
-    expectedMargin(winner, loser) + Math.floor(rng() * 10 - 5)
+    marginFromRatings(winnerRating, loserRating) + Math.floor(rng() * 10 - 5)
   );
   const scoreWinner = 68 + Math.floor(rng() * 12) + Math.floor(margin / 2);
   const scoreLoser = Math.max(55, scoreWinner - margin);
@@ -80,7 +84,13 @@ export function simulateGame(
   const loser = aWins ? teamB : teamA;
   const preGameFavorite = favoriteTeam(teamA, teamB, ratingA, ratingB);
 
-  const { scoreWinner, scoreLoser } = generateScores(winner, loser, rng);
+  const winnerRating = aWins ? ratingA : ratingB;
+  const loserRating = aWins ? ratingB : ratingA;
+  const { scoreWinner, scoreLoser } = generateScores(
+    winnerRating,
+    loserRating,
+    rng
+  );
   const scoreA = aWins ? scoreWinner : scoreLoser;
   const scoreB = aWins ? scoreLoser : scoreWinner;
   const margin = Math.abs(scoreA - scoreB);
