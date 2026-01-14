@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createTeamRating,
   expectedScore,
+  isRatingUpset,
   kFactorForTeam,
   upsetProbability,
   updateRatings,
@@ -41,6 +42,12 @@ describe("ratings", () => {
       upsetProbability(favorite, underdog) +
         expectedScore(favorite, underdog)
     ).toBeCloseTo(1);
+  });
+
+  it("flags underdog wins as upsets and ignores ties", () => {
+    expect(isRatingUpset(1700, 1500, false)).toBe(true);
+    expect(isRatingUpset(1700, 1500, true)).toBe(false);
+    expect(isRatingUpset(1500, 1500, true)).toBe(false);
   });
 
   it("uses a higher K factor for provisional teams", () => {

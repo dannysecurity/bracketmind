@@ -1,5 +1,5 @@
+import { isRatingUpset } from "../ratings.js";
 import { matchupUpsetProbability } from "../probability/matchup.js";
-import { buildSeedMap } from "../probability/seeds.js";
 import { createTournamentState, recordGameResult } from "../tournamentState.js";
 import type { Team, TournamentState } from "../types.js";
 import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
@@ -47,19 +47,14 @@ export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
       rating: state.ratings.get(game.teamBId)?.rating ?? teamById.get(game.teamBId)!.rating,
     };
 
-    const seeds = buildSeedMap(bracket.teams);
-    const seedA = seeds.get(teamA.id) ?? 0;
-    const seedB = seeds.get(teamB.id) ?? 0;
-    const favoriteIsA = seedA <= seedB;
-    const winnerIsUnderdog =
-      (favoriteIsA && game.winnerId === teamB.id) ||
-      (!favoriteIsA && game.winnerId === teamA.id);
+    const winnerIsA = game.winnerId === teamA.id;
+    const isUpset = isRatingUpset(teamA.rating, teamB.rating, winnerIsA);
 
     recordGameResult(state, teamA, teamB, game.scoreA, game.scoreB, {
       round: game.round,
       totalRounds: bracket.rounds,
       margin: Math.abs(game.scoreA - game.scoreB),
-      isUpset: winnerIsUnderdog,
+      isUpset,
     });
 
     match.teamA = teamA;

@@ -1,4 +1,4 @@
-import { expectedScore } from "./ratings.js";
+import { expectedScore, isRatingUpset } from "./ratings.js";
 import {
   createTournamentState,
   effectiveRating,
@@ -60,13 +60,6 @@ function ratingForTeam(team: Team, options: SimulationOptions): number {
   return team.rating;
 }
 
-function favoriteTeam(teamA: Team, teamB: Team, ratingA: number, ratingB: number): Team {
-  if (ratingA === ratingB) {
-    return teamA;
-  }
-  return ratingA > ratingB ? teamA : teamB;
-}
-
 /** Simulate a single game between two teams using rating-based probabilities. */
 export function simulateGame(
   teamA: Team,
@@ -82,7 +75,6 @@ export function simulateGame(
   const aWins = roll < winProbabilityA;
   const winner = aWins ? teamA : teamB;
   const loser = aWins ? teamB : teamA;
-  const preGameFavorite = favoriteTeam(teamA, teamB, ratingA, ratingB);
 
   const winnerRating = aWins ? ratingA : ratingB;
   const loserRating = aWins ? ratingB : ratingA;
@@ -94,8 +86,7 @@ export function simulateGame(
   const scoreA = aWins ? scoreWinner : scoreLoser;
   const scoreB = aWins ? scoreLoser : scoreWinner;
   const margin = Math.abs(scoreA - scoreB);
-  const isUpset =
-    ratingA !== ratingB && winner.id !== preGameFavorite.id;
+  const isUpset = isRatingUpset(ratingA, ratingB, aWins);
 
   let ratingDeltaA: number | undefined;
   let ratingDeltaB: number | undefined;
