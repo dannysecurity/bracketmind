@@ -2,7 +2,7 @@ import {
   updateTeamRatingsWithContext,
   type GameRatingContext,
 } from "./eloUpdates.js";
-import { createTeamRating, type TeamRating } from "./ratings.js";
+import { createTeamRating, isRatingUpset, type TeamRating } from "./ratings.js";
 import type { Team, TournamentState } from "./types.js";
 
 /** Initialize tournament rating state from the bracket field. */
@@ -40,11 +40,14 @@ export function recordGameResult(
     return { ratingDeltaA: 0, ratingDeltaB: 0 };
   }
 
+  const winnerIsA = scoreA > scoreB;
   const fullContext: GameRatingContext = {
     round: context?.round ?? 0,
     totalRounds: context?.totalRounds ?? 1,
     margin: context?.margin ?? Math.abs(scoreA - scoreB),
-    isUpset: context?.isUpset ?? false,
+    isUpset:
+      context?.isUpset ??
+      isRatingUpset(ratingA.rating, ratingB.rating, winnerIsA),
   };
 
   const [newA, newB] = updateTeamRatingsWithContext(

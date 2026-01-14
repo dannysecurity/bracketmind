@@ -83,6 +83,28 @@ describe("recordGameResult", () => {
     expect(provisionalGain).toBeGreaterThan(establishedGain);
   });
 
+  it("applies the upset bonus when the lower-rated team wins", () => {
+    const favorite = team("Favorite", 1700);
+    const underdog = team("Underdog", 1500);
+    const upsetState = createTournamentState([favorite, underdog]);
+    recordGameResult(upsetState, underdog, favorite, 80, 70, { margin: 10 });
+    const upsetGain = underdog.rating - 1500;
+
+    const nonUpsetFavorite = team("Favorite2", 1700);
+    const nonUpsetUnderdog = team("Underdog2", 1500);
+    const nonUpsetState = createTournamentState([
+      nonUpsetFavorite,
+      nonUpsetUnderdog,
+    ]);
+    recordGameResult(nonUpsetState, nonUpsetUnderdog, nonUpsetFavorite, 80, 70, {
+      margin: 10,
+      isUpset: false,
+    });
+    const expectedGain = nonUpsetUnderdog.rating - 1500;
+
+    expect(upsetGain).toBeGreaterThan(expectedGain);
+  });
+
   it("applies larger rating swings in later bracket rounds", () => {
     const teamA = team("TeamA", 1500);
     const teamB = team("TeamB", 1500);
