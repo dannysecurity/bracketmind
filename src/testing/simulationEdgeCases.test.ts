@@ -137,6 +137,28 @@ describe("simulateGame edge cases", () => {
     assertWinnerHasHigherScore(result, favorite);
   });
 
+  it("caps the winner score using the margin-derived ceiling", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const rolls = [0.01, 0.99, 0.99];
+
+    const result = simulateGame(teamA, teamB, {
+      rng: sequenceRng(rolls),
+    });
+
+    const baseMargin = Math.max(
+      1,
+      expectedMargin(teamA, teamB) + Math.floor(rolls[1] * 10 - 5)
+    );
+    const maxWinnerScore =
+      68 + Math.floor(rolls[2] * 12) + Math.floor(baseMargin / 2);
+    const winnerScore =
+      result.winner.id === teamA.id ? result.scoreA : result.scoreB;
+
+    expect(winnerScore).toBeLessThanOrEqual(maxWinnerScore);
+    assertWinnerHasHigherScore(result, teamA);
+  });
+
   it("leaves rating deltas undefined when no tournament state is provided", () => {
     const result = simulateGame(team("A", 1500), team("B", 1400), {
       rng: sequenceRng([0.1, 0.5, 0.5]),
@@ -510,6 +532,30 @@ describe("monteCarloChampionshipRates edge cases", () => {
     expect(rates.size).toBe(field.length + 1);
     expect([...rates.values()].reduce((sum, rate) => sum + rate, 0)).toBe(1);
   });
+
+  it("spreads championship rates evenly across an equal-strength field", () => {
+    const evenField = [
+      team("EvenA", 1500),
+      team("EvenB", 1500),
+      team("EvenC", 1500),
+      team("EvenD", 1500),
+    ];
+    let seed = 4242;
+    const rng = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+
+    const rates = monteCarloChampionshipRates(evenField, 2000, (teams) =>
+      getChampion(simulateBracket(createBracket(teams), { rng }))
+    );
+
+    for (const entry of evenField) {
+      const rate = rates.get(entry.id) ?? 0;
+      expect(rate).toBeGreaterThan(0.15);
+      expect(rate).toBeLessThan(0.35);
+    }
+  });
 });
 
 describe("monteCarloGameOutcomes edge cases", () => {
@@ -625,6 +671,17 @@ describe("monteCarloGameOutcomes edge cases", () => {
     expect(state.ratings.get(teamB.id)?.rating).toBe(startingRatingB);
     expect(teamA.rating).toBe(1500);
     expect(teamB.rating).toBe(1500);
+  });
+
+  it("reports zero upset rate when both teams share the same rating", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+
+    const result = monteCarloGameOutcomes(teamA, teamB, 100, {
+      rng: createSeededRng(31415),
+    });
+
+    expect(result.upsetRate).toBe(0);
   });
 
   it("derives analyticalWinRateA from pre-modified tournament state ratings", () => {
@@ -751,6 +808,31 @@ describe("simulateBracket edge cases", () => {
       expect(match.scoreA).toBeUndefined();
       expect(match.scoreB).toBeUndefined();
     }
+  });
+
+  it("auto-advances team B when team A is a BYE placeholder", () => {
+    const bracket = createBracket(
+      parseTeams(["S1", "S2", "S3"]).map((entry, index) => ({
+        ...entry,
+        rating: 1650 - index * 100,
+      }))
+    );
+    const byeMatch = byeMatches(bracket)[0];
+    const recipient = byeMatch.teamA!;
+    const bye = byeMatch.teamB!;
+
+    expect(bye.name).toBe("BYE");
+    byeMatch.teamA = bye;
+    byeMatch.teamB = recipient;
+
+    const result = simulateBracket(bracket);
+    const simulatedByeMatch = byeMatches(result)[0];
+
+    expect(simulatedByeMatch.winner?.id).toBe(recipient.id);
+    expect(simulatedByeMatch.winner?.name).toBe(recipient.name);
+    expect(simulatedByeMatch.scoreA).toBeUndefined();
+    expect(simulatedByeMatch.scoreB).toBeUndefined();
+    expect(getChampion(result).name).not.toBe("BYE");
   });
 
   it("simulates eight-team brackets with consistent round structure", () => {
