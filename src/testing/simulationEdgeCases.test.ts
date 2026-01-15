@@ -364,6 +364,35 @@ describe("simulateGame edge cases", () => {
     expect(result.margin).toBe(1);
     assertWinnerHasHigherScore(result, teamA);
   });
+
+  it("reports margin as the absolute difference between both scores", () => {
+    const teamA = team("Alpha", 1650);
+    const teamB = team("Beta", 1400);
+    const rollSets = [
+      [0.01, 0.5, 0.5],
+      [0.99, 0.5, 0.5],
+      [0.5, 0, 0.99],
+    ];
+
+    for (const rolls of rollSets) {
+      const result = simulateGame(teamA, teamB, { rng: sequenceRng(rolls) });
+      expect(result.margin).toBe(Math.abs(result.scoreA - result.scoreB));
+      assertWinnerHasHigherScore(result, teamA);
+    }
+  });
+
+  it("assigns the higher box score to team B when they win as the favorite", () => {
+    const underdog = team("Underdog", 1400);
+    const favorite = team("Favorite", 1600);
+
+    const result = simulateGame(underdog, favorite, {
+      rng: sequenceRng([0.99, 0.5, 0.5]),
+    });
+
+    expect(result.winner).toBe(favorite);
+    expect(result.scoreB).toBeGreaterThan(result.scoreA);
+    expect(result.margin).toBe(result.scoreB - result.scoreA);
+  });
 });
 
 describe("expectedMargin edge cases", () => {
@@ -556,6 +585,14 @@ describe("monteCarloChampionshipRates edge cases", () => {
       expect(rate).toBeLessThan(0.35);
     }
   });
+
+  it("records a champion from the callback when no input teams are supplied", () => {
+    const outsider = team("Outsider", 1500);
+    const rates = monteCarloChampionshipRates([], 25, () => outsider);
+
+    expect(rates.size).toBe(1);
+    expect(rates.get(outsider.id)).toBe(1);
+  });
 });
 
 describe("monteCarloGameOutcomes edge cases", () => {
@@ -590,6 +627,12 @@ describe("monteCarloGameOutcomes edge cases", () => {
   it("throws when negative iterations are requested", () => {
     expect(() =>
       monteCarloGameOutcomes(team("A", 1500), team("B", 1500), -1)
+    ).toThrow(/At least one iteration/);
+  });
+
+  it("throws when zero iterations are requested", () => {
+    expect(() =>
+      monteCarloGameOutcomes(team("A", 1500), team("B", 1500), 0)
     ).toThrow(/At least one iteration/);
   });
 
@@ -1086,5 +1129,23 @@ describe("createSeededRng edge cases", () => {
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThan(1);
     }
+  });
+
+  it("truncates fractional seeds to unsigned 32-bit integers", () => {
+    const fromFloat = createSeededRng(42.7);
+    const fromInt = createSeededRng(42);
+
+    expect(Array.from({ length: 5 }, () => fromFloat())).toEqual(
+      Array.from({ length: 5 }, () => fromInt())
+    );
+  });
+
+  it("wraps seed values that exceed the 32-bit unsigned range", () => {
+    const base = createSeededRng(1);
+    const wrapped = createSeededRng(0x1_0000_0001);
+
+    expect(Array.from({ length: 5 }, () => base())).toEqual(
+      Array.from({ length: 5 }, () => wrapped())
+    );
   });
 });
