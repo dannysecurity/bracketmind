@@ -19,6 +19,7 @@ describe("renderHtml", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain('class="team winner"');
     expect(html).toContain("Champion:");
+    expect(html).toContain('<h2 class="section-heading">Simulated bracket</h2>');
   });
 
   it("shows seed numbers in match cards and champion line", () => {
@@ -67,7 +68,8 @@ describe("renderHtml", () => {
       teams
     );
 
-    const html = renderPredictHtml(entries);
+    const html = renderPredictHtml(entries, { iterations: 1000 });
+    expect(html).toContain('<h2 class="section-heading">Championship probabilities (1,000 simulations)</h2>');
     expect(html).toContain('class="predict-row"');
     expect(html).toContain("62.0%");
     expect(html).toContain('style="width:62%"');

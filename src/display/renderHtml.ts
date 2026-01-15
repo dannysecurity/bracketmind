@@ -11,6 +11,10 @@ export interface HtmlRenderOptions {
   showSeeds?: boolean;
 }
 
+export interface PredictHtmlOptions {
+  iterations?: number;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -118,12 +122,20 @@ export function renderBracketHtml(
   const fieldSummary = renderFieldSummaryHtml(bracket);
   const champion = renderChampionHtml(view.champion, showSeeds);
 
-  return `<div class="bracket-grid">${columns}</div>${fieldSummary}${champion}`;
+  return `<h2 class="section-heading">Simulated bracket</h2><div class="bracket-grid">${columns}</div>${fieldSummary}${champion}`;
 }
 
 /** Render predict probabilities as HTML bars. */
-export function renderPredictHtml(entries: PredictEntry[]): string {
-  return `<div class="predict-list">
+export function renderPredictHtml(
+  entries: PredictEntry[],
+  options: PredictHtmlOptions = {}
+): string {
+  const iterationLabel =
+    options.iterations !== undefined
+      ? ` (${options.iterations.toLocaleString()} simulations)`
+      : "";
+
+  return `<h2 class="section-heading">Championship probabilities${iterationLabel}</h2><div class="predict-list">
     ${entries
       .map(
         (entry) => `<div class="predict-row">
@@ -183,8 +195,9 @@ export function renderSimulatePage(bracket: Bracket, teams: string[]): string {
 export function renderPredictPage(
   rates: Map<string, number>,
   teams: import("../types.js").Team[],
-  teamNames: string[]
+  teamNames: string[],
+  iterations?: number
 ): string {
   const entries = buildPredictEntries(rates, teams);
-  return renderViewerPage("", renderPredictHtml(entries), teamNames);
+  return renderViewerPage("", renderPredictHtml(entries, { iterations }), teamNames);
 }

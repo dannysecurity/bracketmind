@@ -63,7 +63,7 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
       Number.isNaN(iterations) ? 1000 : iterations,
       (field) => getChampion(simulateBracket(createBracket(field)))
     );
-    sendHtml(res, renderPredictPage(rates, teams, names));
+    sendHtml(res, renderPredictPage(rates, teams, names, Number.isNaN(iterations) ? 1000 : iterations));
     return;
   }
 
