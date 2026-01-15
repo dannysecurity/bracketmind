@@ -4,6 +4,12 @@ export interface Team {
   id: string;
   name: string;
   rating: number;
+  /** Official tournament seed when known; otherwise derived from rating ranking. */
+  seed?: number;
+}
+
+export function isByeTeam(team: Team | null | undefined): boolean {
+  return team?.name === "BYE";
 }
 
 export interface Match {

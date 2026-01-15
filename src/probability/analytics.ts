@@ -1,6 +1,8 @@
 import { createBracket } from "../bracket.js";
+import { matchIndex } from "../bracket/layout.js";
 import { roundLabel } from "../display/roundLabels.js";
 import type { Bracket, Team } from "../types.js";
+import { isByeTeam } from "../types.js";
 import { computeSubtreeDistribution } from "./bracketPaths.js";
 import { matchupUpsetProbability } from "./matchup.js";
 import { buildSeedMap } from "./seeds.js";
@@ -37,16 +39,8 @@ export interface UpsetLandscape {
   mostLikelyUpsetOverall: UpsetCandidate | null;
 }
 
-function matchIndex(round: number, slot: number, rounds: number): number {
-  let index = 0;
-  for (let r = 0; r < round; r++) {
-    index += Math.pow(2, rounds - r - 1);
-  }
-  return index + slot;
-}
-
 function seedForTeam(seeds: Map<string, number>, team: Team): number | null {
-  return team.name === "BYE" ? null : (seeds.get(team.id) ?? null);
+  return isByeTeam(team) ? null : (seeds.get(team.id) ?? team.seed ?? null);
 }
 
 function buildKnownMatchupCandidate(

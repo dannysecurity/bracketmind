@@ -2,6 +2,8 @@ import { isRatingUpset } from "../ratings.js";
 import { matchupUpsetProbability } from "../probability/matchup.js";
 import { createTournamentState, recordGameResult } from "../tournamentState.js";
 import type { Team, TournamentState } from "../types.js";
+import { isByeTeam } from "../types.js";
+import { teamMapFromDocument } from "./adapters.js";
 import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
 import type { SeasonDocument } from "./types.js";
 
@@ -20,7 +22,7 @@ export interface SeasonRatingReplay {
 /** Replay recorded season games through the Elo update pipeline. */
 export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
   const bracket = createBracketFromSeason(doc);
-  const state = createTournamentState(bracket.teams.filter((team) => team.name !== "BYE"));
+  const state = createTournamentState(bracket.teams.filter((team) => !isByeTeam(team)));
   const startRatings = new Map<string, number>();
 
   for (const [id, rating] of state.ratings) {
@@ -31,20 +33,20 @@ export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
     a.round === b.round ? a.slot - b.slot : a.round - b.round
   );
 
-  const teamById = new Map(doc.teams.map((entry) => [entry.id, entry]));
+  const teamById = teamMapFromDocument(doc);
 
   for (const game of sorted) {
     const idx = matchIndex(game.round, game.slot, bracket.rounds);
     const match = bracket.matches[idx];
+    const baseA = teamById.get(game.teamAId)!;
+    const baseB = teamById.get(game.teamBId)!;
     const teamA: Team = {
-      id: game.teamAId,
-      name: teamById.get(game.teamAId)!.name,
-      rating: state.ratings.get(game.teamAId)?.rating ?? teamById.get(game.teamAId)!.rating,
+      ...baseA,
+      rating: state.ratings.get(game.teamAId)?.rating ?? baseA.rating,
     };
     const teamB: Team = {
-      id: game.teamBId,
-      name: teamById.get(game.teamBId)!.name,
-      rating: state.ratings.get(game.teamBId)?.rating ?? teamById.get(game.teamBId)!.rating,
+      ...baseB,
+      rating: state.ratings.get(game.teamBId)?.rating ?? baseB.rating,
     };
 
     const winnerIsA = game.winnerId === teamA.id;
@@ -65,10 +67,10 @@ export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
   const deltas: SeasonRatingDelta[] = doc.teams.map((entry) => {
     const endRating = state.ratings.get(entry.id)?.rating ?? entry.rating;
     const startRating = startRatings.get(entry.id) ?? entry.rating;
+    const team = teamById.get(entry.id)!;
     return {
       team: {
-        id: entry.id,
-        name: entry.name,
+        ...team,
         rating: endRating,
       },
       startRating,
@@ -93,11 +95,13 @@ export function preGameUpsetProbability(
     throw new Error(`No game at round ${round}, slot ${slot}`);
   }
 
-  const teamA = doc.teams.find((team) => team.id === game.teamAId)!;
-  const teamB = doc.teams.find((team) => team.id === game.teamBId)!;
+  const teamById = teamMapFromDocument(doc);
+  const teamA = teamById.get(game.teamAId)!;
+  const teamB = teamById.get(game.teamBId)!;
 
-  return matchupUpsetProbability(
-    { id: teamA.id, name: teamA.name, rating: teamA.rating },
-    { id: teamB.id, name: teamB.name, rating: teamB.rating }
-  );
+  const upsetProb = matchupUpsetProbability(teamA, teamB);
+  if (upsetProb === null) {
+    throw new Error(`Cannot compute upset probability for BYE matchup at round ${round}, slot ${slot}`);
+  }
+  return upsetProb;
 }

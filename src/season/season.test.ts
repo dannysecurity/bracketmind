@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { buildBracketView } from "../display/bracketView.js";
 import { assertBracketSimulationInvariants } from "../testing/simulationFixtures.js";
 import { compareSeasonPredictions } from "./comparePredictions.js";
 import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
@@ -61,6 +62,19 @@ describe("parseSeasonJson", () => {
 });
 
 describe("loadSeasonBracket", () => {
+  it("preserves official seeds in the display view when rating order differs", () => {
+    const doc = loadFixture("2023-midwest-final-four.json");
+    const bracket = loadSeasonBracket(doc);
+    const view = buildBracketView(bracket);
+    const roundZero = view.matchesByRound[0];
+    const purdueSlot = roundZero.find(
+      (match) => match.teamA?.name === "Purdue" || match.teamB?.name === "Purdue"
+    );
+    const purdue = purdueSlot?.teamA?.name === "Purdue" ? purdueSlot.teamA : purdueSlot?.teamB;
+
+    expect(purdue?.seed).toBe(4);
+  });
+
   it("hydrates an 8-team bracket with official seed placement", () => {
     const doc = loadFixture("2024-east-mini.json");
     const bracket = loadSeasonBracket(doc);
@@ -105,7 +119,7 @@ describe("loadSeasonBracket", () => {
 });
 
 describe("matchIndex", () => {
-  it("maps round and slot to flat match indices", () => {
+  it("re-exports layout matchIndex for season hydration", () => {
     expect(matchIndex(0, 0, 3)).toBe(0);
     expect(matchIndex(1, 0, 3)).toBe(4);
     expect(matchIndex(2, 0, 3)).toBe(6);

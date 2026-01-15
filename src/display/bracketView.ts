@@ -1,6 +1,7 @@
 import { matchupUpsetProbability } from "../probability/matchup.js";
 import { buildSeedMap } from "../probability/seeds.js";
 import type { Bracket, Match, Team } from "../types.js";
+import { isByeTeam } from "../types.js";
 import { roundLabel } from "./roundLabels.js";
 
 export interface TeamView {
@@ -62,9 +63,9 @@ function toTeamView(team: Team | null, seeds: Map<string, number>): TeamView | n
 
   return {
     name: team.name,
-    seed: team.name === "BYE" ? null : (seeds.get(team.id) ?? null),
+    seed: isByeTeam(team) ? null : (seeds.get(team.id) ?? team.seed ?? null),
     rating: team.rating,
-    isBye: team.name === "BYE",
+    isBye: isByeTeam(team),
   };
 }
 

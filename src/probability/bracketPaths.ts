@@ -1,15 +1,9 @@
 import { expectedScore } from "../ratings.js";
+import { matchIndex } from "../bracket/layout.js";
 import type { Bracket, Team } from "../types.js";
+import { isByeTeam } from "../types.js";
 
 export type WinDistribution = Map<string, number>;
-
-function matchIndex(round: number, slot: number, rounds: number): number {
-  let index = 0;
-  for (let r = 0; r < round; r++) {
-    index += Math.pow(2, rounds - r - 1);
-  }
-  return index + slot;
-}
 
 function teamById(teams: Team[], id: string): Team {
   const team = teams.find((entry) => entry.id === id);
@@ -20,10 +14,10 @@ function teamById(teams: Team[], id: string): Team {
 }
 
 function leafDistribution(teamA: Team, teamB: Team): WinDistribution {
-  if (teamA.name === "BYE") {
+  if (isByeTeam(teamA)) {
     return new Map([[teamB.id, 1]]);
   }
-  if (teamB.name === "BYE") {
+  if (isByeTeam(teamB)) {
     return new Map([[teamA.id, 1]]);
   }
 
