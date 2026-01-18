@@ -105,6 +105,24 @@ describe("recordGameResult", () => {
     expect(upsetGain).toBeGreaterThan(expectedGain);
   });
 
+  it("leaves equal-rated teams unchanged on a tied score", () => {
+    const teamA = team("TeamA", 1500);
+    const teamB = team("TeamB", 1500);
+    const state = createTournamentState([teamA, teamB]);
+
+    const { ratingDeltaA, ratingDeltaB } = recordGameResult(
+      state,
+      teamA,
+      teamB,
+      70,
+      70,
+      { margin: 0 }
+    );
+
+    expect(ratingDeltaA).toBe(0);
+    expect(ratingDeltaB).toBe(0);
+  });
+
   it("applies larger rating swings in later bracket rounds", () => {
     const teamA = team("TeamA", 1500);
     const teamB = team("TeamB", 1500);

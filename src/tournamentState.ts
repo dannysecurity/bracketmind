@@ -40,6 +40,7 @@ export function recordGameResult(
     return { ratingDeltaA: 0, ratingDeltaB: 0 };
   }
 
+  const isTie = scoreA === scoreB;
   const winnerIsA = scoreA > scoreB;
   const fullContext: GameRatingContext = {
     round: context?.round ?? 0,
@@ -47,7 +48,7 @@ export function recordGameResult(
     margin: context?.margin ?? Math.abs(scoreA - scoreB),
     isUpset:
       context?.isUpset ??
-      isRatingUpset(ratingA.rating, ratingB.rating, winnerIsA),
+      isRatingUpset(ratingA.rating, ratingB.rating, winnerIsA, isTie),
   };
 
   const [newA, newB] = updateTeamRatingsWithContext(

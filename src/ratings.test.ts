@@ -48,6 +48,7 @@ describe("ratings", () => {
     expect(isRatingUpset(1700, 1500, false)).toBe(true);
     expect(isRatingUpset(1700, 1500, true)).toBe(false);
     expect(isRatingUpset(1500, 1500, true)).toBe(false);
+    expect(isRatingUpset(1700, 1500, false, true)).toBe(false);
   });
 
   it("uses a higher K factor for provisional teams", () => {

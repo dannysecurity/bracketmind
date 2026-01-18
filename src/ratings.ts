@@ -38,13 +38,17 @@ export function upsetProbability(
   return expectedScore(underdogRating, favoriteRating);
 }
 
-/** True when the lower-rated team won; ties are never upsets. */
+/**
+ * True when the lower-rated team won.
+ * Ties and equal ratings are never upsets.
+ */
 export function isRatingUpset(
   ratingA: number,
   ratingB: number,
-  winnerIsA: boolean
+  winnerIsA: boolean,
+  isTie = false
 ): boolean {
-  if (ratingA === ratingB) {
+  if (isTie || ratingA === ratingB) {
     return false;
   }
   return ratingA > ratingB ? !winnerIsA : winnerIsA;
