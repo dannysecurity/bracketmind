@@ -26,6 +26,7 @@ import {
   renderSeasonHeader,
   renderSeasonPredictionComparison,
   renderSeasonRatingReplay,
+  renderSeasonValidation,
 } from "./display/renderSeason.js";
 import { renderSeedingsSection } from "./display/renderSeedings.js";
 import { renderUpsetsSection } from "./display/renderUpsets.js";
@@ -34,6 +35,7 @@ import {
   loadSeasonBracket,
   parseSeasonFile,
   replaySeasonRatings,
+  summarizeSeason,
 } from "./season/index.js";
 import type { ColorOptions } from "./display/colors.js";
 
@@ -360,7 +362,7 @@ export function runCli(args: string[]): void {
 
       if (!path) {
         console.error(
-          "Usage: bracketmind import <season|ratings|compare> <path.json> [--format list|tree] [--iterations N] [--no-color]"
+          "Usage: bracketmind import <season|ratings|compare|validate> <path.json> [--format list|tree] [--iterations N] [--no-color]"
         );
         process.exit(1);
       }
@@ -417,9 +419,17 @@ export function runCli(args: string[]): void {
           break;
         }
 
+        case "validate": {
+          const summary = summarizeSeason(doc);
+          for (const line of renderSeasonValidation(doc, summary, color)) {
+            console.log(line);
+          }
+          break;
+        }
+
         default:
           console.error(
-            "Usage: bracketmind import <season|ratings|compare> <path.json> [--format list|tree] [--iterations N] [--no-color]"
+            "Usage: bracketmind import <season|ratings|compare|validate> <path.json> [--format list|tree] [--iterations N] [--no-color]"
           );
           process.exit(1);
       }
@@ -447,6 +457,8 @@ Commands:
                                    Replay recorded games and show post-tournament Elo shifts
   import compare <path.json> [--iterations N] [--no-color]
                                    Compare pre-tournament Monte Carlo odds to actual champion
+  import validate <path.json> [--no-color]
+                                   Validate a season fixture and summarize completeness
   serve [--port N]                 Launch the web bracket viewer (default 3000)
   help                             Show this message
 
@@ -461,6 +473,7 @@ Examples:
   bracketmind upsets Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
   bracketmind import season fixtures/seasons/2024-east-mini.json --format tree
   bracketmind import compare fixtures/seasons/2023-midwest-final-four.json --iterations 500
+  bracketmind import validate fixtures/seasons/2024-west-mini.json
   bracketmind serve --port 3000
 `);
   }

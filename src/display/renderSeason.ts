@@ -2,6 +2,7 @@ import type { ColorOptions } from "./colors.js";
 import { dim, heading } from "./colors.js";
 import type { SeasonPredictionComparison } from "../season/comparePredictions.js";
 import type { SeasonRatingDelta } from "../season/replayRatings.js";
+import type { SeasonSummary } from "../season/summarizeSeason.js";
 import type { SeasonDocument } from "../season/types.js";
 
 export function renderSeasonHeader(
@@ -59,6 +60,31 @@ export function renderSeasonPredictionComparison(
     const name = nameById.get(teamId) ?? teamId;
     const marker = teamId === comparison.actualChampion.id ? " ★" : "";
     lines.push(`  ${name}${marker}: ${pct(rate)}`);
+  }
+
+  return lines;
+}
+
+export function renderSeasonValidation(
+  doc: SeasonDocument,
+  summary: SeasonSummary,
+  color: ColorOptions = { enabled: false }
+): string[] {
+  const status = summary.isComplete
+    ? "Complete"
+    : `Partial (${summary.recordedGames}/${summary.expectedGames} games recorded)`;
+
+  const lines = [
+    heading("Historical Season Validation", color),
+    `${doc.name} (${doc.year})`,
+    "",
+    `Status: ${status}`,
+    `Teams: ${summary.teamCount} · Rounds: ${summary.totalRounds}`,
+    `Rating upsets: ${summary.ratingUpsets} · Seed upsets: ${summary.seedUpsets}`,
+  ];
+
+  if (summary.championName) {
+    lines.push(`Champion: ${summary.championName}`);
   }
 
   return lines;

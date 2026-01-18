@@ -25,3 +25,7 @@ export {
   compareSeasonPredictions,
   type SeasonPredictionComparison,
 } from "./comparePredictions.js";
+export {
+  summarizeSeason,
+  type SeasonSummary,
+} from "./summarizeSeason.js";

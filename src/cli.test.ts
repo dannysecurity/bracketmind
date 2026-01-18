@@ -226,6 +226,22 @@ describe("runCli", () => {
     expect(stdout).toContain("Actual champion: Purdue");
   });
 
+  it("validates a historical season fixture", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "import",
+        "validate",
+        "fixtures/seasons/2024-west-mini.json",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Historical Season Validation");
+    expect(stdout).toContain("2024 NCAA West Region");
+    expect(stdout).toContain("Status: Complete");
+    expect(stdout).toContain("Champion: North Carolina");
+  });
+
   it("exits with usage when import path is missing", () => {
     const { exitCode, stderr } = captureOutput(() => {
       runCli(["import", "season"]);

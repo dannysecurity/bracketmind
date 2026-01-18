@@ -12,6 +12,7 @@ import {
 } from "./hydrateResults.js";
 import { parseSeasonFile, parseSeasonJson } from "./parseSeason.js";
 import { preGameUpsetProbability, replaySeasonRatings } from "./replayRatings.js";
+import { summarizeSeason } from "./summarizeSeason.js";
 import { validateSeasonDocument } from "./validateSeason.js";
 import type { SeasonDocument } from "./types.js";
 
@@ -158,12 +159,40 @@ describe("preGameUpsetProbability", () => {
   });
 });
 
+describe("summarizeSeason", () => {
+  it("reports a complete fixture with champion and upsets", () => {
+    const doc = loadFixture("2024-west-mini.json");
+    const summary = summarizeSeason(doc);
+
+    expect(summary.isComplete).toBe(true);
+    expect(summary.expectedGames).toBe(7);
+    expect(summary.recordedGames).toBe(7);
+    expect(summary.championName).toBe("North Carolina");
+    expect(summary.seedUpsets).toBeGreaterThan(0);
+  });
+
+  it("flags partial fixtures missing later rounds", () => {
+    const doc = loadFixture("2024-east-mini.json");
+    const partial = {
+      ...doc,
+      games: doc.games.filter((game) => game.round === 0),
+    };
+    const summary = summarizeSeason(partial);
+
+    expect(summary.isComplete).toBe(false);
+    expect(summary.recordedGames).toBe(4);
+    expect(summary.expectedGames).toBe(7);
+    expect(summary.championName).toBeUndefined();
+  });
+});
+
 describe("round-trip fixture integrity", () => {
   it("preserves JSON fixtures through parse and stringify", () => {
     for (const file of [
       "2024-east-mini.json",
       "2023-midwest-final-four.json",
       "2024-title-game.json",
+      "2024-west-mini.json",
     ]) {
       const raw = readFileSync(join(FIXTURES, file), "utf8");
       const doc = parseSeasonJson(raw);
