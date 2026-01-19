@@ -1,4 +1,5 @@
-import { createBracket, getChampion, simulateBracket } from "../bracket.js";
+import { getChampion, simulateBracket } from "../bracket.js";
+import { buildBracket } from "../domain/buildBracket.js";
 import { monteCarloChampionshipRates } from "../simulator.js";
 import type { Team } from "../types.js";
 import { teamsFromDocument } from "./adapters.js";
@@ -24,7 +25,10 @@ export function compareSeasonPredictions(
   const predictedRates = monteCarloChampionshipRates(
     teams,
     iterations,
-    (field) => getChampion(simulateBracket(createBracket(field)))
+    (field) =>
+      getChampion(
+        simulateBracket(buildBracket(field, { ordering: "seed" }))
+      )
   );
 
   let mostFavoredTeam = teams[0];

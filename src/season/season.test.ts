@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildBracketView } from "../display/bracketView.js";
+import { buildBracket } from "../domain/buildBracket.js";
 import { assertBracketSimulationInvariants } from "../testing/simulationFixtures.js";
 import { compareSeasonPredictions } from "./comparePredictions.js";
+import { teamsFromDocument } from "./adapters.js";
 import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
 import {
   getSeasonChampion,
@@ -146,6 +148,17 @@ describe("compareSeasonPredictions", () => {
     expect(comparison.actualChampion.name).toBe("Purdue");
     expect(comparison.predictedRates.size).toBe(4);
     expect(comparison.iterations).toBe(100);
+  });
+
+  it("uses official seed placement for season prediction simulations", () => {
+    const doc = loadFixture("2023-midwest-final-four.json");
+    const teams = teamsFromDocument(doc);
+    const bySeed = buildBracket(teams, { ordering: "seed" });
+    const byRating = buildBracket(teams, { ordering: "rating" });
+
+    expect(bySeed.matches[0].teamB?.id).toBe("purdue");
+    expect(byRating.matches[0].teamB?.id).toBe("xavier");
+    expect(createBracketFromSeason(doc).matches[0].teamB?.id).toBe("purdue");
   });
 });
 

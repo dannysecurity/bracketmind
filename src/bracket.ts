@@ -1,38 +1,15 @@
 import { simulateGame } from "./simulator.js";
 import { createTournamentState } from "./tournamentState.js";
 import { createRating } from "./ratings.js";
-import {
-  bracketPlacementOrder,
-  buildInitialMatches,
-  createByeTeam,
-  matchIndex,
-  nextPowerOfTwo,
-} from "./bracket/layout.js";
+import { matchIndex } from "./bracket/layout.js";
+import { advanceWinner } from "./domain/advanceWinner.js";
+import { buildBracket } from "./domain/buildBracket.js";
 import type { Bracket, BracketSimulationOptions, Team } from "./types.js";
 import { isByeTeam } from "./types.js";
 
-function seedTeams(teams: Team[]): Team[] {
-  const target = nextPowerOfTwo(teams.length);
-  const seeded = [...teams].sort((a, b) => b.rating - a.rating);
-
-  while (seeded.length < target) {
-    seeded.push(createByeTeam(seeded.length));
-  }
-
-  return seeded;
-}
-
 /** Build a single-elimination bracket from an arbitrary list of teams. */
 export function createBracket(teams: Team[]): Bracket {
-  if (teams.length < 2) {
-    throw new Error("At least two teams are required");
-  }
-
-  const seeded = seedTeams(teams);
-  const placed = bracketPlacementOrder(seeded.length).map((i) => seeded[i]);
-  const rounds = Math.log2(placed.length);
-
-  return { teams: placed, matches: buildInitialMatches(placed, rounds), rounds };
+  return buildBracket(teams, { ordering: "rating" });
 }
 
 /** Play every pending match in the bracket until a champion is crowned. */
@@ -73,14 +50,8 @@ export function simulateBracket(
         match.scoreB = result.scoreB;
       }
 
-      if (match.winner && round + 1 < working.rounds) {
-        const nextIdx = matchIndex(round + 1, Math.floor(slot / 2), working.rounds);
-        const nextMatch = working.matches[nextIdx];
-        if (slot % 2 === 0) {
-          nextMatch.teamA = match.winner;
-        } else {
-          nextMatch.teamB = match.winner;
-        }
+      if (match.winner) {
+        advanceWinner(working, round, slot, match.winner);
       }
     }
   }

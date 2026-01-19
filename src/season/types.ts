@@ -1,3 +1,5 @@
+import type { RecordedGame } from "../domain/types.js";
+
 /** A team entry in a historical season fixture. */
 export interface SeasonTeam {
   id: string;
@@ -9,15 +11,7 @@ export interface SeasonTeam {
 }
 
 /** A recorded game result aligned with bracket round/slot indexing. */
-export interface SeasonGame {
-  round: number;
-  slot: number;
-  teamAId: string;
-  teamBId: string;
-  scoreA: number;
-  scoreB: number;
-  winnerId: string;
-}
+export type SeasonGame = RecordedGame;
 
 /** JSON document describing a completed (or partial) tournament season. */
 export interface SeasonDocument {

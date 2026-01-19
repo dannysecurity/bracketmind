@@ -1,6 +1,9 @@
 import { getChampion } from "../bracket.js";
+import { matchIndex } from "../bracket/layout.js";
+import { advanceWinner } from "../domain/advanceWinner.js";
+import { applyGameResultToMatch } from "../domain/gameResults.js";
 import type { Bracket } from "../types.js";
-import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
+import { createBracketFromSeason } from "./buildBracket.js";
 import type { SeasonDocument, SeasonGame } from "./types.js";
 
 /** Apply recorded game results to a bracket without simulation. */
@@ -31,26 +34,8 @@ export function hydrateBracketResults(
       );
     }
 
-    const winner =
-      game.winnerId === match.teamA.id ? match.teamA : match.teamB;
-
-    match.scoreA = game.scoreA;
-    match.scoreB = game.scoreB;
-    match.winner = winner;
-
-    if (game.round + 1 < working.rounds) {
-      const nextIdx = matchIndex(
-        game.round + 1,
-        Math.floor(game.slot / 2),
-        working.rounds
-      );
-      const nextMatch = working.matches[nextIdx];
-      if (game.slot % 2 === 0) {
-        nextMatch.teamA = winner;
-      } else {
-        nextMatch.teamB = winner;
-      }
-    }
+    const winner = applyGameResultToMatch(match, match.teamA, match.teamB, game);
+    advanceWinner(working, game.round, game.slot, winner);
   }
 
   return working;
