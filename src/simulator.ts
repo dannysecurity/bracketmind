@@ -125,6 +125,48 @@ function cloneTeam(team: Team): Team {
   return { ...team };
 }
 
+function percentile(sortedValues: number[], p: number): number {
+  if (sortedValues.length === 0) {
+    return 0;
+  }
+  if (sortedValues.length === 1) {
+    return sortedValues[0];
+  }
+
+  const index = (p / 100) * (sortedValues.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) {
+    return sortedValues[lower];
+  }
+
+  const weight = index - lower;
+  return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
+}
+
+function marginStdDev(margins: number[], avgMargin: number): number {
+  if (margins.length <= 1) {
+    return 0;
+  }
+
+  const variance =
+    margins.reduce((sum, margin) => sum + (margin - avgMargin) ** 2, 0) /
+    margins.length;
+  return Math.sqrt(variance);
+}
+
+function summarizeMargins(margins: number[], avgMargin: number) {
+  const sorted = [...margins].sort((a, b) => a - b);
+  return {
+    marginStdDev: marginStdDev(margins, avgMargin),
+    marginPercentiles: {
+      p10: percentile(sorted, 10),
+      p50: percentile(sorted, 50),
+      p90: percentile(sorted, 90),
+    },
+  };
+}
+
 /** Run many head-to-head simulations and aggregate win, score, and upset rates. */
 export function monteCarloGameOutcomes(
   teamA: Team,
@@ -146,6 +188,7 @@ export function monteCarloGameOutcomes(
   let marginTotal = 0;
   let scoreATotal = 0;
   let scoreBTotal = 0;
+  const margins: number[] = [];
   let sampleResult: SimulationResult | undefined;
 
   for (let i = 0; i < iterations; i++) {
@@ -171,16 +214,22 @@ export function monteCarloGameOutcomes(
       upsets++;
     }
     marginTotal += result.margin;
+    margins.push(result.margin);
     scoreATotal += result.scoreA;
     scoreBTotal += result.scoreB;
   }
+
+  const avgMargin = marginTotal / iterations;
+  const marginSummary = summarizeMargins(margins, avgMargin);
 
   return {
     iterations,
     winRateA: winsA / iterations,
     winRateB: (iterations - winsA) / iterations,
     upsetRate: upsets / iterations,
-    avgMargin: marginTotal / iterations,
+    avgMargin,
+    marginStdDev: marginSummary.marginStdDev,
+    marginPercentiles: marginSummary.marginPercentiles,
     avgScoreA: scoreATotal / iterations,
     avgScoreB: scoreBTotal / iterations,
     analyticalWinRateA,

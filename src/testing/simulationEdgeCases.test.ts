@@ -694,6 +694,8 @@ describe("monteCarloGameOutcomes edge cases", () => {
     expect(result.winRateB).toBe(manual.winRateB);
     expect(result.upsetRate).toBe(manual.upsetRate);
     expect(result.avgMargin).toBe(manual.avgMargin);
+    expect(result.marginStdDev).toBeCloseTo(manual.marginStdDev, 10);
+    expect(result.marginPercentiles).toEqual(manual.marginPercentiles);
     expect(result.avgScoreA).toBe(manual.avgScoreA);
     expect(result.avgScoreB).toBe(manual.avgScoreB);
   });

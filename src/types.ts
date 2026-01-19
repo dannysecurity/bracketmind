@@ -63,6 +63,13 @@ export interface BracketSimulationOptions {
   dynamicRatings?: boolean;
 }
 
+/** Margin distribution percentiles from repeated head-to-head simulations. */
+export interface MarginPercentiles {
+  p10: number;
+  p50: number;
+  p90: number;
+}
+
 /** Aggregated statistics from repeated head-to-head game simulations. */
 export interface GameMonteCarloResult {
   iterations: number;
@@ -70,6 +77,10 @@ export interface GameMonteCarloResult {
   winRateB: number;
   upsetRate: number;
   avgMargin: number;
+  /** Population standard deviation of point margins across trials. */
+  marginStdDev: number;
+  /** 10th, 50th, and 90th percentile margins across trials. */
+  marginPercentiles: MarginPercentiles;
   avgScoreA: number;
   avgScoreB: number;
   /** Elo expected win rate for team A before any simulated games. */

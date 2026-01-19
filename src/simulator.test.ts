@@ -183,6 +183,13 @@ describe("monteCarloGameOutcomes", () => {
     expect(result.winRateA + result.winRateB).toBeCloseTo(1, 10);
     expect(result.iterations).toBe(500);
     expect(result.sampleResult.winner).toBeDefined();
+    expect(result.marginStdDev).toBeGreaterThanOrEqual(0);
+    expect(result.marginPercentiles.p10).toBeLessThanOrEqual(
+      result.marginPercentiles.p50
+    );
+    expect(result.marginPercentiles.p50).toBeLessThanOrEqual(
+      result.marginPercentiles.p90
+    );
   });
 
   it("favors the higher-rated team over many trials", () => {
@@ -205,6 +212,20 @@ describe("monteCarloGameOutcomes", () => {
     });
 
     expect(first).toEqual(second);
+  });
+
+  it("reports zero margin spread for a single iteration", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+
+    const result = monteCarloGameOutcomes(teamA, teamB, 1, {
+      rng: createSeededRng(77),
+    });
+
+    expect(result.marginStdDev).toBe(0);
+    expect(result.marginPercentiles.p10).toBe(result.sampleResult.margin);
+    expect(result.marginPercentiles.p50).toBe(result.sampleResult.margin);
+    expect(result.marginPercentiles.p90).toBe(result.sampleResult.margin);
   });
 
   it("throws when zero trials are requested", () => {

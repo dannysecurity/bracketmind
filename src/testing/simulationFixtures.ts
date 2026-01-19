@@ -105,13 +105,21 @@ export function computeGameOutcomeAggregates(
   rng: () => number
 ): Pick<
   GameMonteCarloResult,
-  "winRateA" | "winRateB" | "upsetRate" | "avgMargin" | "avgScoreA" | "avgScoreB"
+  | "winRateA"
+  | "winRateB"
+  | "upsetRate"
+  | "avgMargin"
+  | "marginStdDev"
+  | "marginPercentiles"
+  | "avgScoreA"
+  | "avgScoreB"
 > {
   let winsA = 0;
   let upsets = 0;
   let marginTotal = 0;
   let scoreATotal = 0;
   let scoreBTotal = 0;
+  const margins: number[] = [];
 
   for (let i = 0; i < iterations; i++) {
     const result = simulateGame({ ...teamA }, { ...teamB }, { rng });
@@ -122,15 +130,45 @@ export function computeGameOutcomeAggregates(
       upsets++;
     }
     marginTotal += result.margin;
+    margins.push(result.margin);
     scoreATotal += result.scoreA;
     scoreBTotal += result.scoreB;
   }
+
+  const avgMargin = marginTotal / iterations;
+  const sortedMargins = [...margins].sort((a, b) => a - b);
+  const percentile = (p: number) => {
+    if (sortedMargins.length === 1) {
+      return sortedMargins[0];
+    }
+    const index = (p / 100) * (sortedMargins.length - 1);
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+    if (lower === upper) {
+      return sortedMargins[lower];
+    }
+    const weight = index - lower;
+    return sortedMargins[lower] * (1 - weight) + sortedMargins[upper] * weight;
+  };
+  const marginStdDev =
+    margins.length <= 1
+      ? 0
+      : Math.sqrt(
+          margins.reduce((sum, margin) => sum + (margin - avgMargin) ** 2, 0) /
+            margins.length
+        );
 
   return {
     winRateA: winsA / iterations,
     winRateB: (iterations - winsA) / iterations,
     upsetRate: upsets / iterations,
-    avgMargin: marginTotal / iterations,
+    avgMargin,
+    marginStdDev,
+    marginPercentiles: {
+      p10: percentile(10),
+      p50: percentile(50),
+      p90: percentile(90),
+    },
     avgScoreA: scoreATotal / iterations,
     avgScoreB: scoreBTotal / iterations,
   };

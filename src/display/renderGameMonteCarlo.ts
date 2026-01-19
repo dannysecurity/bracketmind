@@ -47,7 +47,12 @@ export function renderGameMonteCarloSummary(
   lines.push(
     `  Avg score: ${teamA.name} ${result.avgScoreA.toFixed(1)}, ${teamB.name} ${result.avgScoreB.toFixed(1)}`
   );
-  lines.push(`  Avg margin: ${result.avgMargin.toFixed(1)} pts`);
+  lines.push(
+    `  Avg margin: ${result.avgMargin.toFixed(1)} pts (σ ${result.marginStdDev.toFixed(1)})`
+  );
+  lines.push(
+    `  Margin spread (p10–p90): ${result.marginPercentiles.p10.toFixed(1)}–${result.marginPercentiles.p90.toFixed(1)} pts (median ${result.marginPercentiles.p50.toFixed(1)})`
+  );
   lines.push(`  Upset rate: ${(result.upsetRate * 100).toFixed(1)}%`);
 
   return lines;
