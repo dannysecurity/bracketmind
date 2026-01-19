@@ -27,14 +27,19 @@ import {
   renderSeasonPredictionComparison,
   renderSeasonRatingReplay,
   renderSeasonValidation,
+  renderFixtureCatalog,
+  renderSeasonUpsetAnalysis,
 } from "./display/renderSeason.js";
 import { renderSeedingsSection } from "./display/renderSeedings.js";
 import { renderUpsetsSection } from "./display/renderUpsets.js";
 import {
+  analyzeSeasonUpsets,
   compareSeasonPredictions,
+  listBundledFixtures,
   loadSeasonBracket,
   parseSeasonFile,
   replaySeasonRatings,
+  resolveSeasonFixturePath,
   summarizeSeason,
 } from "./season/index.js";
 import type { ColorOptions } from "./display/colors.js";
@@ -360,16 +365,23 @@ export function runCli(args: string[]): void {
     case "import": {
       const { subcommand, path, format, iterations, color } = parseImportArgs(args);
 
+      if (subcommand === "list") {
+        for (const line of renderFixtureCatalog(listBundledFixtures(), color)) {
+          console.log(line);
+        }
+        break;
+      }
+
       if (!path) {
         console.error(
-          "Usage: bracketmind import <season|ratings|compare|validate> <path.json> [--format list|tree] [--iterations N] [--no-color]"
+          "Usage: bracketmind import <season|ratings|compare|validate|upsets|list> <path.json|@fixture-id> [--format list|tree] [--iterations N] [--no-color]"
         );
         process.exit(1);
       }
 
       let doc;
       try {
-        doc = parseSeasonFile(path);
+        doc = parseSeasonFile(resolveSeasonFixturePath(path));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`Failed to load season fixture: ${message}`);
@@ -427,9 +439,21 @@ export function runCli(args: string[]): void {
           break;
         }
 
+        case "upsets": {
+          const analyses = analyzeSeasonUpsets(doc);
+          const totalRounds = Math.ceil(Math.log2(doc.teams.length));
+          for (const line of renderSeasonHeader(doc, color)) {
+            console.log(line);
+          }
+          for (const line of renderSeasonUpsetAnalysis(analyses, totalRounds, color)) {
+            console.log(line);
+          }
+          break;
+        }
+
         default:
           console.error(
-            "Usage: bracketmind import <season|ratings|compare|validate> <path.json> [--format list|tree] [--iterations N] [--no-color]"
+            "Usage: bracketmind import <season|ratings|compare|validate|upsets|list> <path.json|@fixture-id> [--format list|tree] [--iterations N] [--no-color]"
           );
           process.exit(1);
       }
@@ -457,8 +481,12 @@ Commands:
                                    Replay recorded games and show post-tournament Elo shifts
   import compare <path.json> [--iterations N] [--no-color]
                                    Compare pre-tournament Monte Carlo odds to actual champion
-  import validate <path.json> [--no-color]
+  import validate <path.json|@fixture-id> [--no-color]
                                    Validate a season fixture and summarize completeness
+  import upsets <path.json|@fixture-id> [--no-color]
+                                   Analyze upset probabilities for each recorded game
+  import list [--no-color]
+                                   List bundled historical season fixtures
   serve [--port N]                 Launch the web bracket viewer (default 3000)
   help                             Show this message
 
@@ -472,8 +500,11 @@ Examples:
   bracketmind seedings Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
   bracketmind upsets Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
   bracketmind import season fixtures/seasons/2024-east-mini.json --format tree
+  bracketmind import season @2024-south-region --format tree
   bracketmind import compare fixtures/seasons/2023-midwest-final-four.json --iterations 500
   bracketmind import validate fixtures/seasons/2024-west-mini.json
+  bracketmind import upsets @2024-south-region
+  bracketmind import list
   bracketmind serve --port 3000
 `);
   }

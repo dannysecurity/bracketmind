@@ -242,6 +242,36 @@ describe("runCli", () => {
     expect(stdout).toContain("Champion: North Carolina");
   });
 
+  it("lists bundled historical season fixtures", () => {
+    const { stdout } = captureOutput(() => {
+      runCli(["import", "list", "--no-color"]);
+    });
+
+    expect(stdout).toContain("Bundled Historical Season Fixtures");
+    expect(stdout).toContain("2024-south-region");
+    expect(stdout).toContain("2024-east-mini");
+  });
+
+  it("imports a fixture by catalog alias", () => {
+    const { stdout } = captureOutput(() => {
+      runCli(["import", "season", "@2024-south-region", "--no-color"]);
+    });
+
+    expect(stdout).toContain("2024 NCAA South Region");
+    expect(stdout).toContain("Champion:");
+    expect(stdout).toContain("Houston");
+  });
+
+  it("analyzes upset probabilities for recorded games", () => {
+    const { stdout } = captureOutput(() => {
+      runCli(["import", "upsets", "@2024-east-mini", "--no-color"]);
+    });
+
+    expect(stdout).toContain("Recorded Game Upset Analysis");
+    expect(stdout).toContain("Pre-game lower-rated win chance:");
+    expect(stdout).toContain("UConn");
+  });
+
   it("exits with usage when import path is missing", () => {
     const { exitCode, stderr } = captureOutput(() => {
       runCli(["import", "season"]);

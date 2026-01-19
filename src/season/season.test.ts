@@ -206,6 +206,7 @@ describe("round-trip fixture integrity", () => {
       "2023-midwest-final-four.json",
       "2024-title-game.json",
       "2024-west-mini.json",
+      "2024-south-region.json",
     ]) {
       const raw = readFileSync(join(FIXTURES, file), "utf8");
       const doc = parseSeasonJson(raw);

@@ -29,3 +29,13 @@ export {
   summarizeSeason,
   type SeasonSummary,
 } from "./summarizeSeason.js";
+export {
+  analyzeSeasonUpsets,
+  type SeasonGameUpsetAnalysis,
+} from "./analyzeUpsets.js";
+export {
+  bundledFixturesDir,
+  listBundledFixtures,
+  resolveSeasonFixturePath,
+  type FixtureCatalogEntry,
+} from "./fixtureCatalog.js";

@@ -1,9 +1,12 @@
 import type { ColorOptions } from "./colors.js";
 import { dim, heading } from "./colors.js";
+import type { SeasonGameUpsetAnalysis } from "../season/analyzeUpsets.js";
 import type { SeasonPredictionComparison } from "../season/comparePredictions.js";
+import type { FixtureCatalogEntry } from "../season/fixtureCatalog.js";
 import type { SeasonRatingDelta } from "../season/replayRatings.js";
 import type { SeasonSummary } from "../season/summarizeSeason.js";
 import type { SeasonDocument } from "../season/types.js";
+import { roundLabel } from "./roundLabels.js";
 
 export function renderSeasonHeader(
   doc: SeasonDocument,
@@ -85,6 +88,60 @@ export function renderSeasonValidation(
 
   if (summary.championName) {
     lines.push(`Champion: ${summary.championName}`);
+  }
+
+  return lines;
+}
+
+export function renderFixtureCatalog(
+  entries: FixtureCatalogEntry[],
+  color: ColorOptions = { enabled: false }
+): string[] {
+  const lines = [
+    heading("Bundled Historical Season Fixtures", color),
+    "",
+    dim("Use a fixture id or @id instead of a full path:", color),
+    dim("  bracketmind import season @2024-south-region", color),
+    "",
+  ];
+
+  for (const entry of entries) {
+    lines.push(
+      `${entry.id} — ${entry.name} (${entry.year}) · ${entry.teamCount} teams · ${entry.gameCount} games`
+    );
+  }
+
+  return lines;
+}
+
+export function renderSeasonUpsetAnalysis(
+  analyses: SeasonGameUpsetAnalysis[],
+  totalRounds: number,
+  color: ColorOptions = { enabled: false }
+): string[] {
+  const lines = [heading("Recorded Game Upset Analysis", color), ""];
+  const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`;
+
+  for (const game of analyses) {
+    const label = roundLabel(game.round, totalRounds);
+    const markers = [
+      game.wasRatingUpset ? "rating upset" : null,
+      game.wasSeedUpset ? "seed upset" : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    const suffix = markers ? ` (${markers})` : "";
+
+    lines.push(
+      `${label} · ${game.teamA.name} vs ${game.teamB.name}: ${game.scoreA}-${game.scoreB}, ${game.winner.name} wins`
+    );
+    lines.push(
+      dim(
+        `  Pre-game lower-rated win chance: ${pct(game.preGameUpsetProbability)}${suffix}`,
+        color
+      )
+    );
+    lines.push("");
   }
 
   return lines;

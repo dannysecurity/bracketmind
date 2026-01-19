@@ -1,0 +1,160 @@
+{
+  "id": "2024-south-region",
+  "name": "2024 NCAA South Region",
+  "year": 2024,
+  "teams": [
+    { "id": "houston", "name": "Houston", "seed": 1, "rating": 1750 },
+    { "id": "tennessee", "name": "Tennessee", "seed": 2, "rating": 1705 },
+    { "id": "creighton", "name": "Creighton", "seed": 3, "rating": 1680 },
+    { "id": "duke", "name": "Duke", "seed": 4, "rating": 1670 },
+    { "id": "gonzaga", "name": "Gonzaga", "seed": 5, "rating": 1645 },
+    { "id": "kentucky", "name": "Kentucky", "seed": 6, "rating": 1630 },
+    { "id": "kansas", "name": "Kansas", "seed": 7, "rating": 1615 },
+    { "id": "wisconsin", "name": "Wisconsin", "seed": 8, "rating": 1600 },
+    { "id": "texas-tech", "name": "Texas Tech", "seed": 9, "rating": 1585 },
+    { "id": "northwestern", "name": "Northwestern", "seed": 10, "rating": 1570 },
+    { "id": "nc-state", "name": "NC State", "seed": 11, "rating": 1555 },
+    { "id": "south-carolina", "name": "South Carolina", "seed": 12, "rating": 1540 },
+    { "id": "vermont", "name": "Vermont", "seed": 13, "rating": 1500 },
+    { "id": "colgate", "name": "Colgate", "seed": 14, "rating": 1485 },
+    { "id": "wku", "name": "Western Kentucky", "seed": 15, "rating": 1470 },
+    { "id": "stetson", "name": "Stetson", "seed": 16, "rating": 1420 }
+  ],
+  "games": [
+    {
+      "round": 0,
+      "slot": 0,
+      "teamAId": "houston",
+      "teamBId": "stetson",
+      "scoreA": 86,
+      "scoreB": 64,
+      "winnerId": "houston"
+    },
+    {
+      "round": 0,
+      "slot": 1,
+      "teamAId": "wisconsin",
+      "teamBId": "texas-tech",
+      "scoreA": 85,
+      "scoreB": 60,
+      "winnerId": "wisconsin"
+    },
+    {
+      "round": 0,
+      "slot": 2,
+      "teamAId": "duke",
+      "teamBId": "vermont",
+      "scoreA": 64,
+      "scoreB": 56,
+      "winnerId": "duke"
+    },
+    {
+      "round": 0,
+      "slot": 3,
+      "teamAId": "gonzaga",
+      "teamBId": "south-carolina",
+      "scoreA": 86,
+      "scoreB": 67,
+      "winnerId": "gonzaga"
+    },
+    {
+      "round": 0,
+      "slot": 4,
+      "teamAId": "tennessee",
+      "teamBId": "wku",
+      "scoreA": 82,
+      "scoreB": 56,
+      "winnerId": "tennessee"
+    },
+    {
+      "round": 0,
+      "slot": 5,
+      "teamAId": "kansas",
+      "teamBId": "northwestern",
+      "scoreA": 88,
+      "scoreB": 65,
+      "winnerId": "kansas"
+    },
+    {
+      "round": 0,
+      "slot": 6,
+      "teamAId": "creighton",
+      "teamBId": "colgate",
+      "scoreA": 72,
+      "scoreB": 60,
+      "winnerId": "creighton"
+    },
+    {
+      "round": 0,
+      "slot": 7,
+      "teamAId": "kentucky",
+      "teamBId": "nc-state",
+      "scoreA": 81,
+      "scoreB": 44,
+      "winnerId": "kentucky"
+    },
+    {
+      "round": 1,
+      "slot": 0,
+      "teamAId": "houston",
+      "teamBId": "wisconsin",
+      "scoreA": 105,
+      "scoreB": 79,
+      "winnerId": "houston"
+    },
+    {
+      "round": 1,
+      "slot": 1,
+      "teamAId": "duke",
+      "teamBId": "gonzaga",
+      "scoreA": 93,
+      "scoreB": 89,
+      "winnerId": "duke"
+    },
+    {
+      "round": 1,
+      "slot": 2,
+      "teamAId": "tennessee",
+      "teamBId": "kansas",
+      "scoreA": 92,
+      "scoreB": 80,
+      "winnerId": "tennessee"
+    },
+    {
+      "round": 1,
+      "slot": 3,
+      "teamAId": "creighton",
+      "teamBId": "kentucky",
+      "scoreA": 86,
+      "scoreB": 79,
+      "winnerId": "creighton"
+    },
+    {
+      "round": 2,
+      "slot": 0,
+      "teamAId": "houston",
+      "teamBId": "duke",
+      "scoreA": 82,
+      "scoreB": 71,
+      "winnerId": "houston"
+    },
+    {
+      "round": 2,
+      "slot": 1,
+      "teamAId": "tennessee",
+      "teamBId": "creighton",
+      "scoreA": 69,
+      "scoreB": 75,
+      "winnerId": "creighton"
+    },
+    {
+      "round": 3,
+      "slot": 0,
+      "teamAId": "houston",
+      "teamBId": "creighton",
+      "scoreA": 69,
+      "scoreB": 60,
+      "winnerId": "houston"
+    }
+  ]
+}
