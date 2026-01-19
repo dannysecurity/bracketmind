@@ -21,9 +21,10 @@ export { renderSeedingsSection } from "./renderSeedings.js";
 export type { SeedingsRenderOptions } from "./renderSeedings.js";
 export {
   renderBracketHtml,
+  renderCombinedPage,
   renderPredictHtml,
   renderPredictPage,
   renderSimulatePage,
   renderViewerPage,
 } from "./renderHtml.js";
-export type { HtmlRenderOptions } from "./renderHtml.js";
+export type { BracketHtmlFormat, HtmlRenderOptions, ViewerOptions } from "./renderHtml.js";

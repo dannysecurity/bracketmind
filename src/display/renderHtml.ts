@@ -1,5 +1,10 @@
 import type { Bracket } from "../types.js";
 import {
+  bracketGridRowCount,
+  displayRow,
+  matchExtents,
+} from "./bracketLayout.js";
+import {
   buildBracketView,
   formatUpsetChance,
   type MatchView,
@@ -7,11 +12,20 @@ import {
 } from "./bracketView.js";
 import { buildPredictEntries, type PredictEntry } from "./renderPredict.js";
 
+export type BracketHtmlFormat = "cards" | "aligned";
+
 export interface HtmlRenderOptions {
   showSeeds?: boolean;
+  format?: BracketHtmlFormat;
 }
 
 export interface PredictHtmlOptions {
+  iterations?: number;
+}
+
+export interface ViewerOptions {
+  mode?: "simulate" | "predict" | "both";
+  format?: BracketHtmlFormat;
   iterations?: number;
 }
 
@@ -84,6 +98,30 @@ function renderMatchCard(match: MatchView, showSeeds: boolean): string {
   </article>`;
 }
 
+function renderAlignedMatchCard(
+  match: MatchView,
+  showSeeds: boolean,
+  round: number,
+  totalRounds: number
+): string {
+  const { top, bottom, mid } = matchExtents(round, match.slot, totalRounds);
+  const topRow = displayRow(top);
+  const bottomRow = displayRow(bottom);
+  const midRow = displayRow(mid);
+  const rowStart = round === 0 ? topRow + 1 : midRow + 1;
+  const rowEnd = round === 0 ? bottomRow + 2 : midRow + 2;
+  const style = `style="grid-row: ${rowStart} / ${rowEnd}"`;
+  const connector =
+    round < totalRounds - 1
+      ? `<span class="match-connector" aria-hidden="true"></span>`
+      : "";
+
+  return `<div class="aligned-match" ${style}>
+    ${renderMatchCard(match, showSeeds)}
+    ${connector}
+  </div>`;
+}
+
 function renderFieldSummaryHtml(bracket: Bracket): string {
   const byeCount = bracket.teams.filter((team) => team.name === "BYE").length;
   if (byeCount === 0) {
@@ -103,14 +141,11 @@ function renderChampionHtml(
   return `<p class="champion">Champion: <strong>${renderTeamLabelHtml(champion, showSeeds)}</strong></p>`;
 }
 
-/** Render a simulated bracket as semantic HTML for the web viewer. */
-export function renderBracketHtml(
-  bracket: Bracket,
-  options: HtmlRenderOptions = {}
+function renderBracketCardsHtml(
+  view: ReturnType<typeof buildBracketView>,
+  showSeeds: boolean
 ): string {
-  const showSeeds = options.showSeeds ?? true;
-  const view = buildBracketView(bracket);
-  const columns = view.matchesByRound
+  return view.matchesByRound
     .map(
       (matches, roundIndex) => `<section class="round">
         <h3>${escapeHtml(view.roundLabels[roundIndex])}</h3>
@@ -118,11 +153,47 @@ export function renderBracketHtml(
       </section>`
     )
     .join("\n");
+}
+
+function renderBracketAlignedHtml(
+  view: ReturnType<typeof buildBracketView>,
+  showSeeds: boolean
+): string {
+  const firstRoundMatches = view.matchesByRound[0]?.length ?? 0;
+  const rowCount = bracketGridRowCount(view.rounds, firstRoundMatches);
+
+  return view.matchesByRound
+    .map(
+      (matches, roundIndex) => `<section class="round aligned-round" style="--bracket-rows: ${rowCount}">
+        <h3>${escapeHtml(view.roundLabels[roundIndex])}</h3>
+        <div class="aligned-round-grid">
+          ${matches
+            .map((match) => renderAlignedMatchCard(match, showSeeds, roundIndex, view.rounds))
+            .join("\n")}
+        </div>
+      </section>`
+    )
+    .join("\n");
+}
+
+/** Render a simulated bracket as semantic HTML for the web viewer. */
+export function renderBracketHtml(
+  bracket: Bracket,
+  options: HtmlRenderOptions = {}
+): string {
+  const showSeeds = options.showSeeds ?? true;
+  const format = options.format ?? "aligned";
+  const view = buildBracketView(bracket);
+  const columns =
+    format === "aligned"
+      ? renderBracketAlignedHtml(view, showSeeds)
+      : renderBracketCardsHtml(view, showSeeds);
+  const gridClass = format === "aligned" ? "bracket-grid aligned" : "bracket-grid";
 
   const fieldSummary = renderFieldSummaryHtml(bracket);
   const champion = renderChampionHtml(view.champion, showSeeds);
 
-  return `<h2 class="section-heading">Simulated bracket</h2><div class="bracket-grid">${columns}</div>${fieldSummary}${champion}`;
+  return `<h2 class="section-heading">Simulated bracket</h2><div class="${gridClass}">${columns}</div>${fieldSummary}${champion}`;
 }
 
 /** Render predict probabilities as HTML bars. */
@@ -148,14 +219,46 @@ export function renderPredictHtml(
   </div>`;
 }
 
+function renderViewerForm(teams: string[], options: ViewerOptions = {}): string {
+  const teamValue = escapeHtml(teams.join(", "));
+  const format = options.format ?? "aligned";
+  const iterations = options.iterations ?? 1000;
+
+  const cardsSelected = format === "cards" ? " selected" : "";
+  const alignedSelected = format === "aligned" ? " selected" : "";
+
+  return `<form id="bracket-form">
+      <label for="teams">Teams (comma-separated)</label>
+      <input id="teams" name="teams" value="${teamValue}" required />
+      <p class="form-hint">Use <code>Name:rating</code> for custom Elo ratings, e.g. <code>Duke:1650,Kansas:1620</code>.</p>
+      <div class="form-row">
+        <div class="form-field">
+          <label for="format">Bracket layout</label>
+          <select id="format" name="format">
+            <option value="aligned"${alignedSelected}>Aligned tree</option>
+            <option value="cards"${cardsSelected}>Card columns</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="iterations">Predict simulations</label>
+          <input id="iterations" name="iterations" type="number" min="100" max="100000" step="100" value="${iterations}" />
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" name="mode" value="simulate">Simulate</button>
+        <button type="submit" name="mode" value="predict">Predict</button>
+        <button type="submit" name="mode" value="both">Simulate + predict</button>
+      </div>
+    </form>`;
+}
+
 /** Render a full HTML page for the web viewer. */
 export function renderViewerPage(
   bracketHtml: string,
   predictHtml: string,
-  teams: string[]
+  teams: string[],
+  options: ViewerOptions = {}
 ): string {
-  const teamValue = escapeHtml(teams.join(", "));
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -170,14 +273,7 @@ export function renderViewerPage(
       <h1>bracketmind</h1>
       <p>Tournament bracket simulator</p>
     </header>
-    <form id="bracket-form">
-      <label for="teams">Teams (comma-separated)</label>
-      <input id="teams" name="teams" value="${teamValue}" required />
-      <div class="actions">
-        <button type="submit" name="mode" value="simulate">Simulate</button>
-        <button type="submit" name="mode" value="predict">Predict</button>
-      </div>
-    </form>
+    ${renderViewerForm(teams, options)}
     <section id="results">
       ${bracketHtml}
       ${predictHtml}
@@ -188,16 +284,46 @@ export function renderViewerPage(
 }
 
 /** Convenience helper for server responses. */
-export function renderSimulatePage(bracket: Bracket, teams: string[]): string {
-  return renderViewerPage(renderBracketHtml(bracket), "", teams);
+export function renderSimulatePage(
+  bracket: Bracket,
+  teams: string[],
+  options: ViewerOptions = {}
+): string {
+  return renderViewerPage(
+    renderBracketHtml(bracket, { format: options.format }),
+    "",
+    teams,
+    options
+  );
 }
 
 export function renderPredictPage(
   rates: Map<string, number>,
   teams: import("../types.js").Team[],
   teamNames: string[],
-  iterations?: number
+  options: ViewerOptions & { iterations?: number } = {}
 ): string {
   const entries = buildPredictEntries(rates, teams);
-  return renderViewerPage("", renderPredictHtml(entries, { iterations }), teamNames);
+  return renderViewerPage(
+    "",
+    renderPredictHtml(entries, { iterations: options.iterations }),
+    teamNames,
+    options
+  );
+}
+
+export function renderCombinedPage(
+  bracket: Bracket,
+  rates: Map<string, number>,
+  teams: import("../types.js").Team[],
+  teamNames: string[],
+  options: ViewerOptions = {}
+): string {
+  const entries = buildPredictEntries(rates, teams);
+  return renderViewerPage(
+    renderBracketHtml(bracket, { format: options.format }),
+    renderPredictHtml(entries, { iterations: options.iterations }),
+    teamNames,
+    { ...options, mode: "both" }
+  );
 }

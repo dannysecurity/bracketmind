@@ -3,7 +3,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBracket, getChampion, parseTeams, simulateBracket } from "./bracket.js";
-import { renderPredictPage, renderSimulatePage } from "./display/renderHtml.js";
+import {
+  renderCombinedPage,
+  renderPredictPage,
+  renderSimulatePage,
+  type BracketHtmlFormat,
+  type ViewerOptions,
+} from "./display/renderHtml.js";
 import { monteCarloChampionshipRates } from "./simulator.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -21,6 +27,19 @@ function parseTeamNames(raw: string | null): string[] {
     .split(",")
     .map((name) => name.trim())
     .filter((name) => name.length > 0);
+}
+
+function parseViewerOptions(url: URL): ViewerOptions {
+  const formatParam = url.searchParams.get("format");
+  const format: BracketHtmlFormat =
+    formatParam === "cards" ? "cards" : "aligned";
+  const iterationsRaw = parseInt(url.searchParams.get("iterations") ?? "1000", 10);
+  const iterations = Number.isNaN(iterationsRaw) ? 1000 : Math.min(100_000, Math.max(100, iterationsRaw));
+  const modeParam = url.searchParams.get("mode");
+  const mode =
+    modeParam === "predict" || modeParam === "both" ? modeParam : "simulate";
+
+  return { mode, format, iterations };
 }
 
 function sendHtml(res: ServerResponse, body: string): void {
@@ -54,21 +73,31 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   }
 
   const teams = parseTeams(names);
-  const mode = url.searchParams.get("mode") ?? "simulate";
+  const options = parseViewerOptions(url);
 
-  if (mode === "predict") {
-    const iterations = parseInt(url.searchParams.get("iterations") ?? "1000", 10);
+  if (options.mode === "predict") {
     const rates = monteCarloChampionshipRates(
       teams,
-      Number.isNaN(iterations) ? 1000 : iterations,
+      options.iterations ?? 1000,
       (field) => getChampion(simulateBracket(createBracket(field)))
     );
-    sendHtml(res, renderPredictPage(rates, teams, names, Number.isNaN(iterations) ? 1000 : iterations));
+    sendHtml(res, renderPredictPage(rates, teams, names, options));
     return;
   }
 
   const result = simulateBracket(createBracket(teams));
-  sendHtml(res, renderSimulatePage(result, names));
+
+  if (options.mode === "both") {
+    const rates = monteCarloChampionshipRates(
+      teams,
+      options.iterations ?? 1000,
+      (field) => getChampion(simulateBracket(createBracket(field)))
+    );
+    sendHtml(res, renderCombinedPage(result, rates, teams, names, options));
+    return;
+  }
+
+  sendHtml(res, renderSimulatePage(result, names, options));
 }
 
 /** Start a minimal web viewer for bracket simulation and predictions. */
@@ -78,4 +107,3 @@ export function startServer(port = 3000): void {
     console.log(`bracketmind viewer running at http://localhost:${port}`);
   });
 }
-

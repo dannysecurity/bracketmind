@@ -51,4 +51,14 @@ describe("renderBracketTree", () => {
     expect(tree).toContain("Very Long Team Name A");
     expect(tree).not.toContain("Very Long Team Na…");
   });
+
+  it("shows upset chance on unplayed matchups", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
+      ...team,
+      rating: 1700 - index * 100,
+    }));
+    const tree = renderBracketTree(createBracket(teams), { enabled: false }).join("\n");
+
+    expect(tree).toContain("upset chance");
+  });
 });

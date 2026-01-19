@@ -1,34 +1,11 @@
 import type { Bracket } from "../types.js";
+import { displayRow, matchExtents } from "./bracketLayout.js";
 import { buildBracketView, type BracketView, type MatchView } from "./bracketView.js";
+import { formatUpsetChance } from "./bracketView.js";
 import { ColorOptions, dim, heading, winner } from "./colors.js";
 
 export interface TreeRenderOptions extends ColorOptions {
   nameWidth?: number;
-}
-
-interface MatchExtents {
-  top: number;
-  bottom: number;
-  mid: number;
-}
-
-function matchExtents(round: number, slot: number, totalRounds: number): MatchExtents {
-  if (round === 0) {
-    const top = slot * 2;
-    return { top, bottom: top + 1, mid: top + 0.5 };
-  }
-
-  const upper = matchExtents(round - 1, slot * 2, totalRounds);
-  const lower = matchExtents(round - 1, slot * 2 + 1, totalRounds);
-  return {
-    top: upper.top,
-    bottom: lower.bottom,
-    mid: (upper.mid + lower.mid) / 2,
-  };
-}
-
-function displayRow(mid: number): number {
-  return Math.round(mid * 2);
 }
 
 function padName(name: string, width: number, options: ColorOptions, isWinner: boolean): string {
@@ -66,7 +43,7 @@ function formatOpeningRoundTeam(
 ): string {
   const name = formatTeamName(match, side, width, options);
   if (!match.winner || match.scoreA === undefined || match.scoreB === undefined) {
-    return name;
+    return name + (side === "B" ? formatUpsetHint(match, options) : "");
   }
 
   const team = side === "A" ? match.teamA : match.teamB;
@@ -74,6 +51,13 @@ function formatOpeningRoundTeam(
     return name + scoreSuffix(match);
   }
   return name;
+}
+
+function formatUpsetHint(match: MatchView, options: ColorOptions): string {
+  if (match.upsetChance === null || match.winner) {
+    return "";
+  }
+  return dim(` (${formatUpsetChance(match.upsetChance)})`, options);
 }
 
 function computeNameWidth(view: BracketView, minWidth = 14): number {
@@ -166,7 +150,10 @@ export function renderBracketTree(
           setLine(grid, row, column + nameWidth + 3, "│");
         }
       } else {
-        const winnerText = formatWinnerName(match, nameWidth, options) + scoreSuffix(match);
+        const winnerText =
+          formatWinnerName(match, nameWidth, options) +
+          scoreSuffix(match) +
+          formatUpsetHint(match, options);
         setLine(grid, midRow, column, winnerText);
         if (round < view.rounds - 1) {
           setLine(grid, midRow, column + nameWidth, "───┐");

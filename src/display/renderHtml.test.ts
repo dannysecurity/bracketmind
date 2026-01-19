@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createBracket, parseTeams, simulateBracket } from "../bracket.js";
-import { renderBracketHtml, renderPredictHtml } from "./renderHtml.js";
+import {
+  renderBracketHtml,
+  renderPredictHtml,
+  renderViewerPage,
+} from "./renderHtml.js";
 import { buildPredictEntries } from "./renderPredict.js";
 
 function seededTeams(names: string[]) {
@@ -73,5 +77,41 @@ describe("renderHtml", () => {
     expect(html).toContain('class="predict-row"');
     expect(html).toContain("62.0%");
     expect(html).toContain('style="width:62%"');
+  });
+
+  it("renders aligned bracket layout with grid positioning", () => {
+    const teams = seededTeams(["Alpha", "Beta", "Gamma", "Delta"]);
+    const html = renderBracketHtml(simulateBracket(createBracket(teams)), { format: "aligned" });
+
+    expect(html).toContain('class="bracket-grid aligned"');
+    expect(html).toContain('class="round aligned-round"');
+    expect(html).toContain('style="--bracket-rows: 6"');
+    expect(html).toContain('class="aligned-match"');
+    expect(html).toContain('style="grid-row:');
+    expect(html).toContain('class="match-connector"');
+  });
+
+  it("keeps card columns when format is cards", () => {
+    const teams = seededTeams(["Alpha", "Beta", "Gamma", "Delta"]);
+    const html = renderBracketHtml(simulateBracket(createBracket(teams)), { format: "cards" });
+
+    expect(html).toContain('class="bracket-grid"');
+    expect(html).not.toContain("bracket-grid aligned");
+    expect(html).not.toContain("aligned-match");
+  });
+
+  it("includes layout controls and rating hint in the viewer form", () => {
+    const page = renderViewerPage("", "", ["Duke", "Kansas"], {
+      format: "aligned",
+      iterations: 2500,
+      mode: "both",
+    });
+
+    expect(page).toContain('name="format"');
+    expect(page).toContain('value="aligned" selected');
+    expect(page).toContain('name="iterations"');
+    expect(page).toContain('value="2500"');
+    expect(page).toContain('value="both"');
+    expect(page).toContain("Name:rating");
   });
 });
