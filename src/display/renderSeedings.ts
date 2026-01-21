@@ -1,11 +1,20 @@
-import { analyzeSeeding, mostLikelyUpset, type RoundOneMatchup } from "../seeding.js";
+import {
+  analyzeSeeding,
+  mostLikelyUpset,
+  type RoundOneMatchup,
+} from "../seeding.js";
+import type { RoundOneUpsetOutlook } from "../probability/seedUpsets.js";
 import type { Team } from "../types.js";
 import { ColorOptions, dim, heading } from "./colors.js";
 
 export interface SeedingsRenderOptions extends ColorOptions {}
 
+function formatPercent(probability: number): string {
+  return `${Math.round(probability * 100)}%`;
+}
+
 function formatUpsetChance(probability: number): string {
-  return `${Math.round(probability * 100)}% upset chance`;
+  return `${formatPercent(probability)} upset chance`;
 }
 
 function formatSeedLabel(seed: number | null, name: string): string {
@@ -30,12 +39,22 @@ function formatMatchupLine(matchup: RoundOneMatchup): string {
   return `  ${labelA} vs ${labelB}${upsetHint}`;
 }
 
-/** Render seed order and round-one upset probabilities for CLI output. */
+function formatOutlookLine(matchup: RoundOneUpsetOutlook): string {
+  if (matchup.isByeMatch || matchup.blendedUpsetProbability === null) {
+    return formatMatchupLine(matchup);
+  }
+
+  const labelA = formatSeedLabel(matchup.seedA, matchup.teamA.name);
+  const labelB = formatSeedLabel(matchup.seedB, matchup.teamB.name);
+  return `  ${labelA} vs ${labelB} — ${formatPercent(matchup.eloUpsetProbability!)} Elo · ${formatPercent(matchup.historicalUpsetProbability!)} historical · ${formatPercent(matchup.blendedUpsetProbability)} blended`;
+}
+
+/** Render seed order, round-one upset probabilities, and blended upset outlook for CLI output. */
 export function renderSeedingsSection(
   teams: Team[],
   options: SeedingsRenderOptions = { enabled: false }
 ): string[] {
-  const { seededTeams, roundOneMatchups } = analyzeSeeding(teams);
+  const { seededTeams, roundOneMatchups, upsetOutlook } = analyzeSeeding(teams);
   const lines: string[] = [heading("Bracket Seedings", options), ""];
 
   for (const entry of seededTeams) {
@@ -53,6 +72,38 @@ export function renderSeedingsSection(
       "",
       dim(
         `Most likely first-round upset: ${formatSeedLabel(upset.seedA, upset.teamA.name)} vs ${formatSeedLabel(upset.seedB, upset.teamB.name)} (${formatUpsetChance(upset.upsetProbability)})`,
+        options
+      )
+    );
+  }
+
+  lines.push(
+    "",
+    heading("Round 1 Upset Outlook", options),
+    "",
+    dim(
+      "Blends Elo upset odds with historical NCAA seed matchup rates.",
+      options
+    ),
+    ""
+  );
+  for (const matchup of upsetOutlook.matchups) {
+    lines.push(formatOutlookLine(matchup));
+  }
+
+  lines.push(
+    "",
+    dim(
+      `Expected first-round upsets: ${upsetOutlook.expectedRoundOneUpsets.toFixed(2)}`,
+      options
+    )
+  );
+
+  if (upsetOutlook.mostLikelyUpset?.blendedUpsetProbability !== null) {
+    const top = upsetOutlook.mostLikelyUpset!;
+    lines.push(
+      dim(
+        `Top blended upset: ${formatSeedLabel(top.seedA, top.teamA.name)} vs ${formatSeedLabel(top.seedB, top.teamB.name)} (${formatPercent(top.blendedUpsetProbability!)} blended)`,
         options
       )
     );

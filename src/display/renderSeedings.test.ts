@@ -13,6 +13,8 @@ describe("renderSeedingsSection", () => {
     expect(lines.join("\n")).toContain("#1 Duke vs #4 Purdue");
     expect(lines.join("\n")).toContain("upset chance");
     expect(lines.join("\n")).toContain("Most likely first-round upset:");
+    expect(lines.join("\n")).toContain("Round 1 Upset Outlook");
+    expect(lines.join("\n")).toContain("Expected first-round upsets:");
   });
 
   it("shows bye advancement for odd-sized fields", () => {

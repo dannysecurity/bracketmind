@@ -9,6 +9,7 @@ Tournament bracket simulator with Elo-based team ratings, probabilistic game sim
 - **Game simulation** — score generation driven by rating differential; head-to-head Monte Carlo forecasts via `game --trials`
 - **Monte Carlo predictions** — estimate championship odds across thousands of simulated tournaments
 - **Analytical upset analysis** — path-weighted upset probabilities for every bracket round
+- **Historical seed upset model** — blends Elo forecasts with NCAA seed matchup upset rates in `seedings`
 - **CLI** — simulate a bracket or forecast outcomes from the terminal
 - **Display formats** — round-labeled list view, ASCII tree layout, and predict bar charts
 - **Web viewer** — lightweight browser UI via `serve`
@@ -39,7 +40,7 @@ npm test
 | `game <team1> <team2> [--seed N] [--trials N] [--no-color]` | Simulate one game or forecast head-to-head odds (default 1 trial) |
 | `simulate <teams...> [--format list\|tree] [--no-color]` | Run one full bracket and print results |
 | `predict <teams...> [--iterations N] [--no-color]` | Championship probability estimates (default 1000 runs) |
-| `seedings <teams...> [--no-color]` | Show rating-based seeds and round-one upset odds |
+| `seedings <teams...> [--no-color]` | Show rating-based seeds, round-one upset odds, and blended historical seed outlook |
 | `upsets <teams...> [--no-color]` | Analyze upset probabilities for every bracket round |
 | `serve [--port N]` | Launch the web bracket viewer (default port 3000) |
 | `help` | Show usage |
@@ -52,7 +53,7 @@ src/
   eloUpdates.ts    Margin-, round-, and upset-aware tournament Elo updates
   simulator.ts     Single-game simulation and Monte Carlo helpers
   bracket.ts       Bracket construction and simulation
-  probability/     Shared seed/upset helpers and analytical bracket paths
+  probability/     Shared seed/upset helpers, historical seed rates, and analytical bracket paths
   seeding.ts       Round-one seeding and upset summaries
   display/         Shared bracket view model and CLI/HTML renderers
   cli.ts           Command-line interface

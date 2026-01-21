@@ -2,6 +2,11 @@ import { createBracket } from "./bracket.js";
 import { matchupUpsetProbability } from "./probability/matchup.js";
 import { buildSeedMap, buildSeededTeams } from "./probability/seeds.js";
 import type { SeededTeam } from "./probability/seeds.js";
+import {
+  analyzeRoundOneUpsetOutlook,
+  type TournamentUpsetOutlook,
+  type UpsetOutlookOptions,
+} from "./probability/seedUpsets.js";
 import type { Bracket, Team } from "./types.js";
 
 export type { SeededTeam };
@@ -43,15 +48,22 @@ export function getRoundOneMatchups(bracket: Bracket): RoundOneMatchup[] {
     });
 }
 
-/** Build seedings and round-one matchups from a raw team list. */
-export function analyzeSeeding(teams: Team[]): {
+export type { TournamentUpsetOutlook, UpsetOutlookOptions };
+
+/** Build seedings, round-one matchups, and blended upset outlook from a raw team list. */
+export function analyzeSeeding(
+  teams: Team[],
+  options: UpsetOutlookOptions = {}
+): {
   seededTeams: SeededTeam[];
   roundOneMatchups: RoundOneMatchup[];
+  upsetOutlook: TournamentUpsetOutlook;
 } {
   const bracket = createBracket(teams);
   return {
     seededTeams: buildSeededTeams(teams),
     roundOneMatchups: getRoundOneMatchups(bracket),
+    upsetOutlook: analyzeRoundOneUpsetOutlook(bracket, options),
   };
 }
 

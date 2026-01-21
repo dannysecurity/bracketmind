@@ -57,10 +57,13 @@ describe("seeding", () => {
       ...team,
       rating: 1700 - i * 100,
     }));
-    const { roundOneMatchups } = analyzeSeeding(teams);
+    const { roundOneMatchups, upsetOutlook } = analyzeSeeding(teams);
     const upset = mostLikelyUpset(roundOneMatchups);
 
     expect(upset?.seedA).toBe(2);
     expect(upset?.seedB).toBe(3);
+    expect(upsetOutlook.expectedRoundOneUpsets).toBeGreaterThan(0);
+    expect(upsetOutlook.mostLikelyUpset?.seedA).toBe(2);
+    expect(upsetOutlook.mostLikelyUpset?.seedB).toBe(3);
   });
 });

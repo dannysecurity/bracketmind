@@ -143,6 +143,8 @@ describe("runCli", () => {
     expect(stdout).toContain("#1 Duke (1650)");
     expect(stdout).toContain("Round 1 Matchups");
     expect(stdout).toContain("Most likely first-round upset:");
+    expect(stdout).toContain("Round 1 Upset Outlook");
+    expect(stdout).toContain("Expected first-round upsets:");
   });
 
   it("exits with usage when seedings has too few teams", () => {
