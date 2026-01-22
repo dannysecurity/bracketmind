@@ -24,7 +24,10 @@ import {
   byeMatches,
   computeGameOutcomeAggregates,
   constantRng,
+  countingRng,
   expectedByeCount,
+  expectedRngCallsForTeamCount,
+  nonByeMatchCount,
   finalMatch,
   matchesInRound,
   playedMatchesForTeam,
@@ -393,6 +396,41 @@ describe("simulateGame edge cases", () => {
     expect(result.scoreB).toBeGreaterThan(result.scoreA);
     expect(result.margin).toBe(result.scoreB - result.scoreA);
   });
+
+  it("ignores round metadata when no tournament state is provided", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+
+    const withoutRound = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+    });
+    const withRound = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+      round: 2,
+      totalRounds: 4,
+    });
+
+    expect(withRound.ratingDeltaA).toBeUndefined();
+    expect(withRound.ratingDeltaB).toBeUndefined();
+    expect(withRound.winner).toEqual(withoutRound.winner);
+    expect(withRound.scoreA).toBe(withoutRound.scoreA);
+    expect(withRound.scoreB).toBe(withoutRound.scoreB);
+  });
+
+  it("respects score floors and minimum margin under maximum noise rolls", () => {
+    const favorite = team("Favorite", 2100);
+    const underdog = team("Underdog", 1100);
+
+    const result = simulateGame(favorite, underdog, {
+      rng: sequenceRng([0.01, 0.99, 0.99]),
+    });
+
+    expect(result.winner).toBe(favorite);
+    expect(result.scoreA).toBeGreaterThanOrEqual(68);
+    expect(result.scoreB).toBeGreaterThanOrEqual(55);
+    expect(result.margin).toBeGreaterThanOrEqual(1);
+    assertWinnerHasHigherScore(result, favorite);
+  });
 });
 
 describe("expectedMargin edge cases", () => {
@@ -405,6 +443,20 @@ describe("expectedMargin edge cases", () => {
     expect(expectedMargin(team("EvenA", 1500), team("EvenB", 1500))).toBeGreaterThanOrEqual(
       1
     );
+  });
+
+  it("returns pinned margins at zero, moderate, and extreme rating gaps", () => {
+    const evenA = team("EvenA", 1500);
+    const evenB = team("EvenB", 1500);
+    const moderateFavorite = team("ModerateFavorite", 1540);
+    const moderateUnderdog = team("ModerateUnderdog", 1500);
+    const heavyFavorite = team("HeavyFavorite", 1900);
+    const longshot = team("Longshot", 1500);
+
+    expect(expectedMargin(evenA, evenB)).toBe(5);
+    expect(expectedMargin(moderateFavorite, moderateUnderdog)).toBe(6);
+    expect(expectedMargin(heavyFavorite, longshot)).toBe(15);
+    expect(expectedMargin(longshot, heavyFavorite)).toBe(9);
   });
 });
 
@@ -593,6 +645,47 @@ describe("monteCarloChampionshipRates edge cases", () => {
     expect(rates.size).toBe(1);
     expect(rates.get(outsider.id)).toBe(1);
   });
+
+  it("assigns a single 1.0 rate when only one team is supplied", () => {
+    const solo = team("Solo", 1600);
+    const rates = monteCarloChampionshipRates([solo], 40, () => solo);
+
+    expect(rates.size).toBe(1);
+    expect(rates.get(solo.id)).toBe(1);
+  });
+
+  it("propagates errors thrown by the simulation callback", () => {
+    expect(() =>
+      monteCarloChampionshipRates(field, 5, () => {
+        throw new Error("bracket simulation failed");
+      })
+    ).toThrow(/bracket simulation failed/);
+  });
+
+  it("spreads championship rates evenly across an eight-team equal-strength field", () => {
+    const evenField = Array.from({ length: 8 }, (_, index) =>
+      team(`Even${index + 1}`, 1500)
+    );
+    let seed = 5150;
+    const rng = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+
+    const rates = monteCarloChampionshipRates(evenField, 4000, (teams) =>
+      getChampion(simulateBracket(createBracket(teams), { rng }))
+    );
+
+    for (const entry of evenField) {
+      const rate = rates.get(entry.id) ?? 0;
+      expect(rate).toBeGreaterThan(0.05);
+      expect(rate).toBeLessThan(0.25);
+    }
+    expect([...rates.values()].reduce((sum, rate) => sum + rate, 0)).toBeCloseTo(
+      1,
+      10
+    );
+  });
 });
 
 describe("monteCarloGameOutcomes edge cases", () => {
@@ -753,6 +846,41 @@ describe("monteCarloGameOutcomes edge cases", () => {
     );
     expect(result.analyticalWinRateA).not.toBeCloseTo(0.5, 5);
   });
+
+  it("converges upset rate toward the analytical underdog win probability", () => {
+    const favorite = team("Favorite", 2400);
+    const longshot = team("Longshot", 800);
+    const analyticalUpsetRate = 1 - winProbabilityFor(favorite.rating, longshot.rating);
+
+    const result = monteCarloGameOutcomes(favorite, longshot, 8000, {
+      rng: createSeededRng(271828),
+    });
+
+    expect(analyticalUpsetRate).toBeGreaterThan(0);
+    expect(result.upsetRate).toBeGreaterThan(analyticalUpsetRate - 0.03);
+    expect(result.upsetRate).toBeLessThan(analyticalUpsetRate + 0.03);
+  });
+
+  it("interpolates margin percentiles when exactly two trials are run", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const seed = 1618;
+    const rng = createSeededRng(seed);
+
+    const manual = computeGameOutcomeAggregates(teamA, teamB, 2, rng);
+    const result = monteCarloGameOutcomes(teamA, teamB, 2, {
+      rng: createSeededRng(seed),
+    });
+
+    expect(result.marginStdDev).toBeGreaterThan(0);
+    expect(result.marginPercentiles).toEqual(manual.marginPercentiles);
+    expect(result.marginPercentiles.p50).toBeGreaterThanOrEqual(
+      Math.min(...[manual.marginPercentiles.p10, manual.marginPercentiles.p90])
+    );
+    expect(result.marginPercentiles.p50).toBeLessThanOrEqual(
+      Math.max(...[manual.marginPercentiles.p10, manual.marginPercentiles.p90])
+    );
+  });
 });
 
 describe("simulateBracket edge cases", () => {
@@ -767,9 +895,24 @@ describe("simulateBracket edge cases", () => {
     expect(() => getChampion(bracket)).toThrow(/not been simulated/);
   });
 
-  it("throws when a non-BYE match is missing a participant", () => {
+  it("throws when a non-BYE match is missing team A", () => {
     const bracket = createBracket(parseTeams(["A", "B", "C", "D"]));
     bracket.matches[0].teamA = null;
+
+    expect(() => simulateBracket(bracket)).toThrow(/Incomplete match/);
+  });
+
+  it("throws when a non-BYE match is missing team B", () => {
+    const bracket = createBracket(parseTeams(["A", "B", "C", "D"]));
+    bracket.matches[0].teamB = null;
+
+    expect(() => simulateBracket(bracket)).toThrow(/Incomplete match/);
+  });
+
+  it("throws when both participants are missing from a non-BYE slot", () => {
+    const bracket = createBracket(parseTeams(["A", "B", "C", "D"]));
+    bracket.matches[0].teamA = null;
+    bracket.matches[0].teamB = null;
 
     expect(() => simulateBracket(bracket)).toThrow(/Incomplete match/);
   });
@@ -1080,6 +1223,138 @@ describe("simulateBracket edge cases", () => {
 
     assertBracketSimulationInvariants(replay);
     expect(getChampion(replay).name).not.toBe("BYE");
+  });
+
+  it("consumes exactly three RNG values per simulated game in an eight-team bracket", () => {
+    const teams = parseTeams([
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "S6",
+      "S7",
+      "S8",
+    ]).map((entry, index) => ({ ...entry, rating: 1700 - index * 25 }));
+    const bracket = createBracket(teams);
+    const { rng, callCount } = countingRng(createSeededRng(90210));
+
+    simulateBracket(bracket, { rng });
+
+    expect(callCount()).toBe(expectedRngCallsForTeamCount(teams.length));
+    expect(nonByeMatchCount(bracket)).toBeLessThan(teams.length - 1);
+  });
+
+  it("consumes no RNG values for BYE auto-advances in a three-team field", () => {
+    const teams = parseTeams(["S1", "S2", "S3"]).map((entry, index) => ({
+      ...entry,
+      rating: 1700 - index * 50,
+    }));
+    const bracket = createBracket(teams);
+    const { rng, callCount } = countingRng(createSeededRng(90210));
+
+    simulateBracket(bracket, { rng });
+
+    expect(byeMatches(bracket)).toHaveLength(1);
+    expect(callCount()).toBe(expectedRngCallsForTeamCount(teams.length));
+  });
+
+  it("repeats a short RNG sequence deterministically across many matches", () => {
+    const teams = parseTeams([
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "S6",
+      "S7",
+      "S8",
+    ]).map((entry, index) => ({ ...entry, rating: 1700 - index * 25 }));
+    const shortCycle = sequenceRng([0.01, 0.5, 0.5]);
+
+    const first = simulateBracket(createBracket(teams), { rng: shortCycle });
+    const second = simulateBracket(createBracket(teams), {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+    });
+
+    expect(getChampion(first).id).toBe(getChampion(second).id);
+    for (let i = 0; i < first.matches.length; i++) {
+      expect(first.matches[i].scoreA).toBe(second.matches[i].scoreA);
+      expect(first.matches[i].scoreB).toBe(second.matches[i].scoreB);
+    }
+  });
+
+  it("leaves BYE recipients without scored matches until they face real opposition", () => {
+    const teams = parseTeams(["S1", "S2", "S3"]).map((entry, index) => ({
+      ...entry,
+      rating: 1700 - index * 50,
+    }));
+    const topSeed = [...teams].sort((a, b) => b.rating - a.rating)[0];
+    const result = simulateBracket(createBracket(teams), {
+      dynamicRatings: true,
+      rng: createSeededRng(4444),
+    });
+
+    const byeMatch = byeMatches(result).find(
+      (match) => match.winner?.id === topSeed.id
+    );
+    expect(byeMatch).toBeTruthy();
+    expect(byeMatch?.scoreA).toBeUndefined();
+    expect(byeMatch?.scoreB).toBeUndefined();
+    expect(playedMatchesForTeam(result, topSeed.id).length).toBeGreaterThan(0);
+  });
+
+  it("uses accumulated ratings when computing later-round win probabilities", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map(
+      (entry, index) => ({ ...entry, rating: 1600 - index * 80 })
+    );
+    const bracket = createBracket(teams);
+    const roundOneFavorite = roundOneMatches(bracket)[0].teamA!;
+    const roundOneUnderdog = roundOneMatches(bracket)[0].teamB!;
+
+    const result = simulateBracket(bracket, {
+      dynamicRatings: true,
+      rng: sequenceRng([
+        0.99, 0.5, 0.5,
+        0.1, 0.5, 0.5,
+        0.1, 0.5, 0.5,
+      ]),
+    });
+
+    const roundOne = result.matches.find(
+      (match) => match.round === 0 && match.scoreA !== undefined
+    );
+    expect(roundOne?.winner?.id).toBe(roundOneUnderdog.id);
+
+    const favoriteAfterUpset = result.teams.find(
+      (entry) => entry.id === roundOneFavorite.id
+    )?.rating;
+    const underdogAfterUpset = result.teams.find(
+      (entry) => entry.id === roundOneUnderdog.id
+    )?.rating;
+
+    expect(favoriteAfterUpset).toBeLessThan(roundOneFavorite.rating);
+    expect(underdogAfterUpset).toBeGreaterThan(roundOneUnderdog.rating);
+
+    const semifinal = result.matches.find((match) => match.round === 1);
+    const semifinalFavorite = semifinal?.teamA ?? semifinal?.teamB;
+    const semifinalUnderdog =
+      semifinal?.teamA?.id === semifinalFavorite?.id
+        ? semifinal?.teamB
+        : semifinal?.teamA;
+
+    if (!semifinalFavorite || !semifinalUnderdog) {
+      throw new Error("Expected a populated semifinal matchup");
+    }
+
+    const expectedSemifinalProb = winProbabilityFor(
+      semifinalFavorite.rating,
+      semifinalUnderdog.rating
+    );
+    expect(expectedSemifinalProb).not.toBeCloseTo(
+      winProbabilityFor(roundOneFavorite.rating, roundOneUnderdog.rating),
+      2
+    );
   });
 });
 

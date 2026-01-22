@@ -35,6 +35,36 @@ export function constantRng(value: number): () => number {
   return () => value;
 }
 
+/** Wrap an RNG and track how many times it is invoked. */
+export function countingRng(
+  base: () => number = Math.random
+): { rng: () => number; callCount: () => number } {
+  let calls = 0;
+  return {
+    rng: () => {
+      calls += 1;
+      return base();
+    },
+    callCount: () => calls,
+  };
+}
+
+/** Count matches that will actually be simulated (both sides present, neither is a BYE). */
+export function nonByeMatchCount(bracket: Bracket): number {
+  return bracket.matches.filter(
+    (match) =>
+      match.teamA &&
+      match.teamB &&
+      match.teamA.name !== "BYE" &&
+      match.teamB.name !== "BYE"
+  ).length;
+}
+
+/** RNG draws consumed by a full single-elimination simulation (three per game). */
+export function expectedRngCallsForTeamCount(realTeamCount: number): number {
+  return Math.max(0, realTeamCount - 1) * 3;
+}
+
 /** Win probability for team A from two ratings (Elo expected score). */
 export function winProbabilityFor(ratingA: number, ratingB: number): number {
   return expectedScore(ratingA, ratingB);
