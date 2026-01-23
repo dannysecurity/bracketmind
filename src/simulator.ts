@@ -12,6 +12,11 @@ import type {
 } from "./types.js";
 
 const DEFAULT_RNG = Math.random;
+const BASE_WINNER_SCORE = 68;
+const WINNER_SCORE_SPREAD = 12;
+const LOSER_SCORE_FLOOR = 55;
+const MARGIN_NOISE_RANGE = 5;
+const RATING_GAP_DIVISOR = 40;
 
 /** Deterministic RNG from a numeric seed (mulberry32). */
 export function createSeededRng(seed: number): () => number {
@@ -28,7 +33,7 @@ export function createSeededRng(seed: number): () => number {
 function marginFromRatings(winnerRating: number, loserRating: number): number {
   const gap = winnerRating - loserRating;
   const isUpset = gap < 0;
-  const gapFactor = Math.abs(gap) / 40;
+  const gapFactor = Math.abs(gap) / RATING_GAP_DIVISOR;
   const base = 5 + gapFactor * (isUpset ? 0.35 : 1);
   return Math.max(1, Math.round(base));
 }
@@ -43,12 +48,17 @@ function generateScores(
   loserRating: number,
   rng: () => number
 ): { scoreWinner: number; scoreLoser: number } {
+  const marginNoise =
+    Math.floor(rng() * (2 * MARGIN_NOISE_RANGE + 1)) - MARGIN_NOISE_RANGE;
   const margin = Math.max(
     1,
-    marginFromRatings(winnerRating, loserRating) + Math.floor(rng() * 10 - 5)
+    marginFromRatings(winnerRating, loserRating) + marginNoise
   );
-  const scoreWinner = 68 + Math.floor(rng() * 12) + Math.floor(margin / 2);
-  const scoreLoser = Math.max(55, scoreWinner - margin);
+  const scoreWinner =
+    BASE_WINNER_SCORE +
+    Math.floor(rng() * WINNER_SCORE_SPREAD) +
+    Math.floor(margin / 2);
+  const scoreLoser = Math.max(LOSER_SCORE_FLOOR, scoreWinner - margin);
 
   return { scoreWinner, scoreLoser };
 }

@@ -138,6 +138,22 @@ describe("simulateGame", () => {
     );
   });
 
+  it("applies symmetric margin noise around the expected margin", () => {
+    const teamA = team("A", 1500);
+    const teamB = team("B", 1500);
+    const baseline = expectedMargin(teamA, teamB);
+
+    const tightest = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0, 0.5]),
+    });
+    const widest = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0.999999, 0.5]),
+    });
+
+    expect(tightest.margin).toBe(Math.max(1, baseline - 5));
+    expect(widest.margin).toBe(baseline + 5);
+  });
+
   it("reports margin and upset metadata on each result", () => {
     const favorite = team("Favorite", 1700);
     const underdog = team("Underdog", 1500);

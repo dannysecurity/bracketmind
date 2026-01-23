@@ -151,7 +151,8 @@ describe("simulateGame edge cases", () => {
 
     const baseMargin = Math.max(
       1,
-      expectedMargin(teamA, teamB) + Math.floor(rolls[1] * 10 - 5)
+      expectedMargin(teamA, teamB) +
+        (Math.floor(rolls[1] * 11) - 5)
     );
     const maxWinnerScore =
       68 + Math.floor(rolls[2] * 12) + Math.floor(baseMargin / 2);
