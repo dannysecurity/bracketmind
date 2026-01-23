@@ -21,7 +21,4 @@ export {
 export {
   orderTeamsForBracket,
   seasonTeamToTeam,
-  teamMapFromDocument,
-  teamsFromDocument,
-  type SeasonTeamEntry,
 } from "./teams.js";

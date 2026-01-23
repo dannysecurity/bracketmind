@@ -1,14 +1,7 @@
-import type { RecordedGame } from "../domain/types.js";
+import type { RecordedGame, SeededTeam } from "../models/index.js";
 
 /** A team entry in a historical season fixture. */
-export interface SeasonTeam {
-  id: string;
-  name: string;
-  /** Official tournament seed (1 = highest). */
-  seed: number;
-  /** Pre-tournament Elo-style rating. */
-  rating: number;
-}
+export type SeasonTeam = SeededTeam;
 
 /** A recorded game result aligned with bracket round/slot indexing. */
 export type SeasonGame = RecordedGame;

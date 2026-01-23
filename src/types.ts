@@ -1,33 +1,8 @@
 import type { TeamRating } from "./ratings.js";
+import type { Team } from "./models/index.js";
 
-export interface Team {
-  id: string;
-  name: string;
-  rating: number;
-  /** Official tournament seed when known; otherwise derived from rating ranking. */
-  seed?: number;
-}
-
-export function isByeTeam(team: Team | null | undefined): boolean {
-  return team?.name === "BYE";
-}
-
-export interface Match {
-  id: string;
-  round: number;
-  slot: number;
-  teamA: Team | null;
-  teamB: Team | null;
-  winner: Team | null;
-  scoreA?: number;
-  scoreB?: number;
-}
-
-export interface Bracket {
-  teams: Team[];
-  matches: Match[];
-  rounds: number;
-}
+export type { Bracket, Match, Team } from "./models/index.js";
+export { isByeTeam } from "./models/index.js";
 
 /** Per-team rating tracking for games played within a single tournament run. */
 export interface TournamentState {
