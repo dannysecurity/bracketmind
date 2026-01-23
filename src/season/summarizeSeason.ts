@@ -1,5 +1,6 @@
 import { isRatingUpset } from "../ratings.js";
-import { teamMapFromDocument } from "./adapters.js";
+import { GameCatalog, resolveGameOutcome } from "../models/gameCatalog.js";
+import { teamRegistryFromDocument } from "./adapters.js";
 import { getSeasonChampion, loadSeasonBracket } from "./hydrateResults.js";
 import type { SeasonDocument } from "./types.js";
 
@@ -21,25 +22,22 @@ export function summarizeSeason(doc: SeasonDocument): SeasonSummary {
   const expectedGames = teamCount - 1;
   const recordedGames = doc.games.length;
 
-  const teamById = teamMapFromDocument(doc);
-  const seedById = new Map(doc.teams.map((team) => [team.id, team.seed]));
+  const registry = teamRegistryFromDocument(doc);
+  const catalog = GameCatalog.fromGames(doc.games);
 
   let ratingUpsets = 0;
   let seedUpsets = 0;
 
-  for (const game of doc.games) {
-    const teamA = teamById.get(game.teamAId)!;
-    const teamB = teamById.get(game.teamBId)!;
-    const winnerIsA = game.winnerId === game.teamAId;
+  for (const game of catalog.all) {
+    const outcome = resolveGameOutcome(game, registry);
 
-    if (isRatingUpset(teamA.rating, teamB.rating, winnerIsA)) {
+    if (
+      isRatingUpset(outcome.teamA.rating, outcome.teamB.rating, outcome.winnerIsA)
+    ) {
       ratingUpsets++;
     }
 
-    const winnerSeed = seedById.get(game.winnerId)!;
-    const loserId = winnerIsA ? game.teamBId : game.teamAId;
-    const loserSeed = seedById.get(loserId)!;
-    if (winnerSeed > loserSeed) {
+    if (outcome.winnerSeed > outcome.loserSeed) {
       seedUpsets++;
     }
   }

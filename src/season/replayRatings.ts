@@ -1,9 +1,10 @@
 import { isRatingUpset } from "../ratings.js";
 import { matchupUpsetProbability } from "../probability/matchup.js";
+import { GameCatalog } from "../models/gameCatalog.js";
 import { createTournamentState, recordGameResult } from "../tournamentState.js";
 import type { Team, TournamentState } from "../types.js";
 import { isByeTeam } from "../types.js";
-import { teamMapFromDocument } from "./adapters.js";
+import { teamRegistryFromDocument } from "./adapters.js";
 import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
 import type { SeasonDocument } from "./types.js";
 
@@ -29,17 +30,14 @@ export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
     startRatings.set(id, rating.rating);
   }
 
-  const sorted = [...doc.games].sort((a, b) =>
-    a.round === b.round ? a.slot - b.slot : a.round - b.round
-  );
+  const catalog = GameCatalog.fromGames(doc.games);
+  const registry = teamRegistryFromDocument(doc);
 
-  const teamById = teamMapFromDocument(doc);
-
-  for (const game of sorted) {
+  for (const game of catalog.all) {
     const idx = matchIndex(game.round, game.slot, bracket.rounds);
     const match = bracket.matches[idx];
-    const baseA = teamById.get(game.teamAId)!;
-    const baseB = teamById.get(game.teamBId)!;
+    const baseA = registry.require(game.teamAId);
+    const baseB = registry.require(game.teamBId);
     const teamA: Team = {
       ...baseA,
       rating: state.ratings.get(game.teamAId)?.rating ?? baseA.rating,
@@ -67,7 +65,7 @@ export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
   const deltas: SeasonRatingDelta[] = doc.teams.map((entry) => {
     const endRating = state.ratings.get(entry.id)?.rating ?? entry.rating;
     const startRating = startRatings.get(entry.id) ?? entry.rating;
-    const team = teamById.get(entry.id)!;
+    const team = registry.require(entry.id);
     return {
       team: {
         ...team,
@@ -90,14 +88,11 @@ export function preGameUpsetProbability(
   round: number,
   slot: number
 ): number {
-  const game = doc.games.find((entry) => entry.round === round && entry.slot === slot);
-  if (!game) {
-    throw new Error(`No game at round ${round}, slot ${slot}`);
-  }
-
-  const teamById = teamMapFromDocument(doc);
-  const teamA = teamById.get(game.teamAId)!;
-  const teamB = teamById.get(game.teamBId)!;
+  const catalog = GameCatalog.fromGames(doc.games);
+  const registry = teamRegistryFromDocument(doc);
+  const game = catalog.requireAt(round, slot);
+  const teamA = registry.require(game.teamAId);
+  const teamB = registry.require(game.teamBId);
 
   const upsetProb = matchupUpsetProbability(teamA, teamB);
   if (upsetProb === null) {

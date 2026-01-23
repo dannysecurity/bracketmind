@@ -1,16 +1,9 @@
-import type { SeededTeam, Team } from "../models/index.js";
+import type { Team } from "../models/index.js";
 import { isByeTeam } from "../models/index.js";
 import type { BracketOrdering } from "./types.js";
 
 /** Convert a season fixture team entry into the runtime team model. */
-export function seasonTeamToTeam(entry: SeededTeam): Team {
-  return {
-    id: entry.id,
-    name: entry.name,
-    rating: entry.rating,
-    seed: entry.seed,
-  };
-}
+export { toRuntimeTeam as seasonTeamToTeam } from "../models/team.js";
 
 /** Sort teams for bracket seeding using the chosen ordering strategy. */
 export function orderTeamsForBracket(

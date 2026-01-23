@@ -2,6 +2,7 @@ export type { SeasonDocument, SeasonGame, SeasonTeam } from "./types.js";
 export {
   seasonTeamToTeam,
   teamMapFromDocument,
+  teamRegistryFromDocument,
   teamsFromDocument,
 } from "./adapters.js";
 export { parseSeasonFile, parseSeasonJson } from "./parseSeason.js";

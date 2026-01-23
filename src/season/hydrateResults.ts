@@ -2,6 +2,7 @@ import { getChampion } from "../bracket.js";
 import { matchIndex } from "../bracket/layout.js";
 import { advanceWinner } from "../domain/advanceWinner.js";
 import { applyGameResultToMatch } from "../domain/gameResults.js";
+import { GameCatalog } from "../models/gameCatalog.js";
 import type { Bracket } from "../types.js";
 import { createBracketFromSeason } from "./buildBracket.js";
 import type { SeasonDocument, SeasonGame } from "./types.js";
@@ -12,11 +13,9 @@ export function hydrateBracketResults(
   games: SeasonGame[]
 ): Bracket {
   const working = structuredClone(bracket);
-  const sorted = [...games].sort((a, b) =>
-    a.round === b.round ? a.slot - b.slot : a.round - b.round
-  );
+  const catalog = GameCatalog.fromGames(games);
 
-  for (const game of sorted) {
+  for (const game of catalog.all) {
     const idx = matchIndex(game.round, game.slot, working.rounds);
     const match = working.matches[idx];
 
