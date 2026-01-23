@@ -209,6 +209,45 @@ describe("simulateGame edge cases", () => {
     expect(lateGain).toBeGreaterThan(earlyGain);
   });
 
+  it("uses a neutral round K multiplier when totalRounds is one", () => {
+    const rolls = [0.01, 0.5, 0.5];
+
+    const singleRoundA = team("SingleA", 1500);
+    const singleRoundB = team("SingleB", 1500);
+    const singleRoundState = createTournamentState([singleRoundA, singleRoundB]);
+    simulateGame(singleRoundA, singleRoundB, {
+      rng: sequenceRng(rolls),
+      tournamentState: singleRoundState,
+      round: 0,
+      totalRounds: 1,
+    });
+
+    const defaultA = team("DefaultA", 1500);
+    const defaultB = team("DefaultB", 1500);
+    const defaultState = createTournamentState([defaultA, defaultB]);
+    simulateGame(defaultA, defaultB, {
+      rng: sequenceRng(rolls),
+      tournamentState: defaultState,
+    });
+
+    const earlyA = team("EarlyA", 1500);
+    const earlyB = team("EarlyB", 1500);
+    const earlyState = createTournamentState([earlyA, earlyB]);
+    simulateGame(earlyA, earlyB, {
+      rng: sequenceRng(rolls),
+      tournamentState: earlyState,
+      round: 0,
+      totalRounds: 3,
+    });
+
+    const singleRoundGain = singleRoundA.rating - 1500;
+    const defaultGain = defaultA.rating - 1500;
+    const earlyRoundGain = earlyA.rating - 1500;
+
+    expect(singleRoundGain).toBe(defaultGain);
+    expect(singleRoundGain).toBeGreaterThanOrEqual(earlyRoundGain);
+  });
+
   it("uses seed ratings for opponents missing from tournament state", () => {
     const tracked = team("Tracked", 1600);
     const untracked = team("Untracked", 1200);
@@ -222,6 +261,23 @@ describe("simulateGame edge cases", () => {
 
     expect(result.winProbabilityA).toBeCloseTo(expectedProb, 5);
     expect(effectiveRating(untracked, state)).toBe(1200);
+    expect(result.ratingDeltaA).toBe(0);
+    expect(result.ratingDeltaB).toBe(0);
+  });
+
+  it("uses seed ratings when only team B is tracked in tournament state", () => {
+    const untracked = team("Untracked", 1600);
+    const tracked = team("Tracked", 1200);
+    const state = createTournamentState([tracked]);
+    const expectedProb = winProbabilityFor(1600, 1200);
+
+    const result = simulateGame(untracked, tracked, {
+      rng: constantRng(0.01),
+      tournamentState: state,
+    });
+
+    expect(result.winProbabilityA).toBeCloseTo(expectedProb, 5);
+    expect(effectiveRating(untracked, state)).toBe(1600);
     expect(result.ratingDeltaA).toBe(0);
     expect(result.ratingDeltaB).toBe(0);
   });
@@ -272,6 +328,22 @@ describe("simulateGame edge cases", () => {
     expect(result.ratingDeltaA).toBe(0);
     expect(result.ratingDeltaB).toBe(0);
     expect(tracked.rating).toBe(1200);
+  });
+
+  it("returns zero deltas when a tracked favorite beats an untracked opponent", () => {
+    const tracked = team("Tracked", 1600);
+    const untracked = team("Untracked", 1200);
+    const state = createTournamentState([tracked]);
+
+    const result = simulateGame(tracked, untracked, {
+      rng: constantRng(0.01),
+      tournamentState: state,
+    });
+
+    expect(result.winner).toBe(tracked);
+    expect(result.ratingDeltaA).toBe(0);
+    expect(result.ratingDeltaB).toBe(0);
+    expect(untracked.rating).toBe(1200);
   });
 
   it("projects tighter upset margins than favorite wins at extreme rating gaps", () => {
@@ -812,6 +884,30 @@ describe("monteCarloGameOutcomes edge cases", () => {
     expect(teamB.rating).toBe(1500);
   });
 
+  it("passes round metadata through to each fresh tournament-state trial", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+    const rolls = [0.01, 0.5, 0.5];
+
+    const early = monteCarloGameOutcomes(teamA, teamB, 1, {
+      rng: sequenceRng(rolls),
+      tournamentState: state,
+      round: 0,
+      totalRounds: 3,
+    });
+    const late = monteCarloGameOutcomes(teamA, teamB, 1, {
+      rng: sequenceRng(rolls),
+      tournamentState: state,
+      round: 2,
+      totalRounds: 3,
+    });
+
+    expect(late.sampleResult.ratingDeltaA).toBeGreaterThan(
+      early.sampleResult.ratingDeltaA!
+    );
+  });
+
   it("reports zero upset rate when both teams share the same rating", () => {
     const teamA = team("Alpha", 1500);
     const teamB = team("Beta", 1500);
@@ -1022,6 +1118,28 @@ describe("simulateBracket edge cases", () => {
     expect(simulatedByeMatch.scoreA).toBeUndefined();
     expect(simulatedByeMatch.scoreB).toBeUndefined();
     expect(getChampion(result).name).not.toBe("BYE");
+  });
+
+  it("declares team B the winner when both sides of a match are BYE placeholders", () => {
+    const bracket = createBracket(
+      parseTeams(["S1", "S2", "S3"]).map((entry, index) => ({
+        ...entry,
+        rating: 1650 - index * 100,
+      }))
+    );
+    const byeMatch = byeMatches(bracket)[0];
+    const originalBye = byeMatch.teamB!;
+    byeMatch.teamA = originalBye;
+    byeMatch.teamB = team("BYE", 0, "bye-alt");
+
+    const result = simulateBracket(bracket);
+    const simulatedByeMatch = byeMatches(result).find(
+      (match) => match.slot === byeMatch.slot
+    );
+
+    expect(simulatedByeMatch?.winner?.name).toBe("BYE");
+    expect(simulatedByeMatch?.scoreA).toBeUndefined();
+    expect(simulatedByeMatch?.scoreB).toBeUndefined();
   });
 
   it("simulates eight-team brackets with consistent round structure", () => {
