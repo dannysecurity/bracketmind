@@ -127,6 +127,15 @@ describe("runCli", () => {
     expect(stderr).toContain("Usage:");
   });
 
+  it("exits with usage when game --trials is not a number", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["game", "Alpha", "Beta", "--trials", "abc"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Usage:");
+  });
+
   it("prints seedings and round-one upset probabilities", () => {
     const { stdout } = captureOutput(() => {
       runCli([

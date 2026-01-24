@@ -6,6 +6,7 @@ import {
   createTournamentState,
   monteCarloGameOutcomes,
 } from "./simulator.js";
+import { countingRng } from "./testing/simulationFixtures.js";
 import type { Team } from "./types.js";
 
 function team(name: string, rating: number): Team {
@@ -52,6 +53,12 @@ describe("expectedMargin", () => {
 });
 
 describe("simulateGame", () => {
+  it("consumes exactly three RNG draws per game", () => {
+    const { rng, callCount } = countingRng(createSeededRng(42));
+    simulateGame(team("A", 1500), team("B", 1500), { rng });
+    expect(callCount()).toBe(3);
+  });
+
   it("picks the higher-rated team when the outcome roll favors them", () => {
     const duke = team("Duke", 1650);
     const kansas = team("Kansas", 1500);

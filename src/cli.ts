@@ -207,7 +207,8 @@ function parseGameArgs(args: string[]): {
     color: { enabled: !noColor && supportsColor() },
     dynamicRatings,
     seed: seedValue !== undefined && !Number.isNaN(seedValue) ? seedValue : undefined,
-    trials: Number.isNaN(trialsValue) ? 1 : trialsValue,
+    trials:
+      trialsFlag >= 0 && Number.isNaN(trialsValue) ? 0 : trialsValue,
   };
 }
 

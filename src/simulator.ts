@@ -65,7 +65,13 @@ function ratingForTeam(team: Team, options: SimulationOptions): number {
   return team.rating;
 }
 
-/** Simulate a single game between two teams using rating-based probabilities. */
+/**
+ * Simulate a single game between two teams using rating-based probabilities.
+ *
+ * Consumes exactly three RNG draws: outcome roll, margin noise, and winner
+ * score spread. Team A wins when the outcome roll is strictly less than its
+ * win probability; a roll equal to the probability awards the win to team B.
+ */
 export function simulateGame(
   teamA: Team,
   teamB: Team,
