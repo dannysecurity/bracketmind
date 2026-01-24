@@ -1,5 +1,20 @@
 const DEFAULT_RATING = 1500;
 const K_FACTOR = 32;
+const RATING_GAP_DIVISOR = 40;
+/** Baseline expected margin for evenly matched teams (1500 vs 1500). */
+export const EVEN_MATCHUP_EXPECTED_MARGIN = 5;
+
+/** Expected point margin when the winner beats the loser, scaled by rating gap. */
+export function expectedMarginFromRatings(
+  winnerRating: number,
+  loserRating: number
+): number {
+  const gap = winnerRating - loserRating;
+  const isUpset = gap < 0;
+  const gapFactor = Math.abs(gap) / RATING_GAP_DIVISOR;
+  const base = EVEN_MATCHUP_EXPECTED_MARGIN + gapFactor * (isUpset ? 0.35 : 1);
+  return Math.max(1, Math.round(base));
+}
 
 export interface TeamRating {
   rating: number;

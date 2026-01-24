@@ -1,4 +1,8 @@
-import { expectedScore, isRatingUpset } from "./ratings.js";
+import {
+  expectedMarginFromRatings,
+  expectedScore,
+  isRatingUpset,
+} from "./ratings.js";
 import {
   createTournamentState,
   effectiveRating,
@@ -16,7 +20,6 @@ const BASE_WINNER_SCORE = 68;
 const WINNER_SCORE_SPREAD = 12;
 const LOSER_SCORE_FLOOR = 55;
 const MARGIN_NOISE_RANGE = 5;
-const RATING_GAP_DIVISOR = 40;
 
 /** Deterministic RNG from a numeric seed (mulberry32). */
 export function createSeededRng(seed: number): () => number {
@@ -30,17 +33,9 @@ export function createSeededRng(seed: number): () => number {
   };
 }
 
-function marginFromRatings(winnerRating: number, loserRating: number): number {
-  const gap = winnerRating - loserRating;
-  const isUpset = gap < 0;
-  const gapFactor = Math.abs(gap) / RATING_GAP_DIVISOR;
-  const base = 5 + gapFactor * (isUpset ? 0.35 : 1);
-  return Math.max(1, Math.round(base));
-}
-
 /** Expected point margin when `winner` beats `loser`, scaled by rating gap. */
 export function expectedMargin(winner: Team, loser: Team): number {
-  return marginFromRatings(winner.rating, loser.rating);
+  return expectedMarginFromRatings(winner.rating, loser.rating);
 }
 
 function generateScores(
@@ -52,7 +47,7 @@ function generateScores(
     Math.floor(rng() * (2 * MARGIN_NOISE_RANGE + 1)) - MARGIN_NOISE_RANGE;
   const margin = Math.max(
     1,
-    marginFromRatings(winnerRating, loserRating) + marginNoise
+    expectedMarginFromRatings(winnerRating, loserRating) + marginNoise
   );
   const scoreWinner =
     BASE_WINNER_SCORE +

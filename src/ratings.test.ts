@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createTeamRating,
+  expectedMarginFromRatings,
   expectedScore,
   isRatingUpset,
   kFactorForTeam,
@@ -73,5 +74,14 @@ describe("ratings", () => {
     expect(newProvisional.rating - provisional.rating).toBeGreaterThan(
       newEstablished.rating - established.rating
     );
+  });
+
+  it("projects wider margins for strong favorites than for upsets", () => {
+    const even = expectedMarginFromRatings(1500, 1500);
+    const favorite = expectedMarginFromRatings(1700, 1500);
+    const upset = expectedMarginFromRatings(1500, 1700);
+    expect(even).toBe(5);
+    expect(favorite).toBeGreaterThan(even);
+    expect(upset).toBeLessThan(favorite);
   });
 });

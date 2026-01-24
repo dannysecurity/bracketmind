@@ -1,4 +1,10 @@
-import { expectedScore, kFactorForTeam, type TeamRating } from "./ratings.js";
+import {
+  EVEN_MATCHUP_EXPECTED_MARGIN,
+  expectedMarginFromRatings,
+  expectedScore,
+  kFactorForTeam,
+  type TeamRating,
+} from "./ratings.js";
 
 /** Context for scaling Elo updates by game situation and bracket stage. */
 export interface GameRatingContext {
@@ -19,14 +25,27 @@ const UPSET_BONUS = 0.08;
 /**
  * Map a win/loss plus margin to an Elo "actual" score in [0, 1].
  * Blowouts count as fully decisive; nail-biters give partial credit to the loser.
+ *
+ * When winner/loser ratings are provided, the margin cap scales with the
+ * expected margin for that matchup so a 15-point favorite win counts less
+ * than the same margin between evenly matched teams.
  */
 export function actualScoreFromGame(
   won: boolean,
   margin: number,
-  movCap = DEFAULT_MOV_CAP
+  movCap = DEFAULT_MOV_CAP,
+  winnerRating?: number,
+  loserRating?: number
 ): number {
-  const clamped = Math.max(0, Math.min(margin, movCap));
-  const decisiveness = 0.5 + 0.5 * (clamped / movCap);
+  let effectiveMovCap = movCap;
+  if (winnerRating !== undefined && loserRating !== undefined) {
+    const expected = expectedMarginFromRatings(winnerRating, loserRating);
+    effectiveMovCap =
+      movCap * (expected / EVEN_MATCHUP_EXPECTED_MARGIN);
+  }
+
+  const clamped = Math.max(0, Math.min(margin, effectiveMovCap));
+  const decisiveness = 0.5 + 0.5 * (clamped / effectiveMovCap);
   return won ? decisiveness : 1 - decisiveness;
 }
 
@@ -86,8 +105,22 @@ export function computeActualScores(
   }
 
   const winnerIsA = scoreA > scoreB;
-  let actualA = actualScoreFromGame(winnerIsA, context.margin);
-  let actualB = actualScoreFromGame(!winnerIsA, context.margin);
+  const winnerRating = winnerIsA ? ratingA : ratingB;
+  const loserRating = winnerIsA ? ratingB : ratingA;
+  let actualA = actualScoreFromGame(
+    winnerIsA,
+    context.margin,
+    DEFAULT_MOV_CAP,
+    winnerRating,
+    loserRating
+  );
+  let actualB = actualScoreFromGame(
+    !winnerIsA,
+    context.margin,
+    DEFAULT_MOV_CAP,
+    winnerRating,
+    loserRating
+  );
 
   return applyUpsetBonus(
     actualA,

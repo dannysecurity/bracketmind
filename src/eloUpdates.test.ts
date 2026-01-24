@@ -35,6 +35,24 @@ describe("actualScoreFromGame", () => {
     expect(actualScoreFromGame(true, 2)).toBeCloseTo(0.55);
     expect(actualScoreFromGame(false, 2)).toBeCloseTo(0.45);
   });
+
+  it("preserves even-matchup decisiveness when ratings are provided", () => {
+    const withRatings = actualScoreFromGame(true, 10, 20, 1500, 1500);
+    const withoutRatings = actualScoreFromGame(true, 10);
+    expect(withRatings).toBeCloseTo(withoutRatings);
+  });
+
+  it("counts a favorite win as less decisive than the same margin between equals", () => {
+    const evenMatch = actualScoreFromGame(true, 15, 20, 1500, 1500);
+    const favoriteWin = actualScoreFromGame(true, 15, 20, 1700, 1500);
+    expect(favoriteWin).toBeLessThan(evenMatch);
+  });
+
+  it("counts an underdog win as more decisive than a favorite win at the same margin", () => {
+    const favoriteWin = actualScoreFromGame(true, 10, 20, 1700, 1500);
+    const upsetWin = actualScoreFromGame(true, 10, 20, 1500, 1700);
+    expect(upsetWin).toBeGreaterThan(favoriteWin);
+  });
 });
 
 describe("roundKMultiplier", () => {
@@ -62,6 +80,13 @@ describe("computeActualScores", () => {
     const close = computeActualScores(72, 70, gameContext({ margin: 2 }), 1500, 1500);
     expect(blowout[0]).toBeGreaterThan(close[0]);
     expect(blowout[1]).toBeLessThan(close[1]);
+  });
+
+  it("transfers less rating when a heavy favorite wins by the same margin", () => {
+    const even = computeActualScores(85, 70, gameContext({ margin: 15 }), 1500, 1500);
+    const favorite = computeActualScores(85, 70, gameContext({ margin: 15 }), 1700, 1500);
+    expect(favorite[0]).toBeLessThan(even[0]);
+    expect(favorite[1]).toBeGreaterThan(even[1]);
   });
 
   it("boosts the underdog on an upset", () => {
