@@ -6,6 +6,7 @@ export {
   teamsFromDocument,
 } from "./adapters.js";
 export { parseSeasonFile, parseSeasonJson } from "./parseSeason.js";
+export { loadSeasonFixture } from "./loadFixture.js";
 export { validateSeasonDocument } from "./validateSeason.js";
 export {
   createBracketFromSeason,

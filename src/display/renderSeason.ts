@@ -106,10 +106,39 @@ export function renderFixtureCatalog(
   ];
 
   for (const entry of entries) {
+    const champion = entry.championName ? ` · ★ ${entry.championName}` : "";
     lines.push(
-      `${entry.id} — ${entry.name} (${entry.year}) · ${entry.teamCount} teams · ${entry.gameCount} games`
+      `${entry.id} — ${entry.name} (${entry.year}) · ${entry.teamCount} teams · ${entry.gameCount} games${champion}`
     );
   }
+
+  return lines;
+}
+
+export function renderSeasonInfo(
+  doc: SeasonDocument,
+  summary: SeasonSummary,
+  color: ColorOptions = { enabled: false }
+): string[] {
+  const status = summary.isComplete
+    ? "Complete"
+    : `Partial (${summary.recordedGames}/${summary.expectedGames} games recorded)`;
+
+  const lines = [
+    heading("Season Fixture Info", color),
+    `${doc.id} — ${doc.name} (${doc.year})`,
+    "",
+    `Status: ${status}`,
+    `Teams: ${summary.teamCount} · Games: ${summary.recordedGames}/${summary.expectedGames} · Rounds: ${summary.totalRounds}`,
+    `Rating upsets: ${summary.ratingUpsets} · Seed upsets: ${summary.seedUpsets}`,
+  ];
+
+  if (summary.championName) {
+    lines.push(`Champion: ${summary.championName}`);
+  }
+
+  lines.push("");
+  lines.push(dim(`Load full bracket: bracketmind import season @${doc.id}`, color));
 
   return lines;
 }

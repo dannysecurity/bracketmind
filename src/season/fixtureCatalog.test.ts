@@ -16,10 +16,21 @@ describe("fixtureCatalog", () => {
   it("lists every bundled season fixture with metadata", () => {
     const entries = listBundledFixtures();
 
-    expect(entries.length).toBeGreaterThanOrEqual(5);
+    expect(entries.length).toBeGreaterThanOrEqual(6);
     expect(entries.map((entry) => entry.id)).toContain("2024-south-region");
+    expect(entries.map((entry) => entry.id)).toContain("2023-east-mini");
     expect(entries.every((entry) => entry.path.startsWith(bundledFixturesDir()))).toBe(
       true
+    );
+  });
+
+  it("includes champion names for complete fixtures", () => {
+    const entries = listBundledFixtures();
+    const eastMini = entries.find((entry) => entry.id === "2023-east-mini");
+
+    expect(eastMini?.championName).toBe("UConn");
+    expect(entries.find((entry) => entry.id === "2024-south-region")?.championName).toBe(
+      "Houston"
     );
   });
 

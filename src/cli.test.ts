@@ -297,6 +297,20 @@ describe("runCli", () => {
     expect(stdout).toContain("Bundled Historical Season Fixtures");
     expect(stdout).toContain("2024-south-region");
     expect(stdout).toContain("2024-east-mini");
+    expect(stdout).toContain("2023-east-mini");
+    expect(stdout).toContain("★ UConn");
+  });
+
+  it("shows compact fixture info without rendering the full bracket", () => {
+    const { stdout } = captureOutput(() => {
+      runCli(["import", "info", "@2023-east-mini", "--no-color"]);
+    });
+
+    expect(stdout).toContain("Season Fixture Info");
+    expect(stdout).toContain("2023-east-mini");
+    expect(stdout).toContain("Status: Complete");
+    expect(stdout).toContain("Champion: UConn");
+    expect(stdout).not.toContain("Round 1");
   });
 
   it("imports a fixture by catalog alias", () => {

@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
 import { parseSeasonFile } from "./parseSeason.js";
+import { summarizeSeason } from "./summarizeSeason.js";
 import type { SeasonDocument } from "./types.js";
 
 /** Metadata for a bundled historical season JSON fixture. */
@@ -12,6 +13,7 @@ export interface FixtureCatalogEntry {
   year: number;
   teamCount: number;
   gameCount: number;
+  championName?: string;
 }
 
 const BUNDLED_FIXTURES_DIR = join(import.meta.dirname, "../../fixtures/seasons");
@@ -39,6 +41,8 @@ function catalogEntryFromDocument(
   filename: string,
   path: string
 ): FixtureCatalogEntry {
+  const summary = summarizeSeason(doc);
+
   return {
     id: doc.id,
     filename,
@@ -47,6 +51,7 @@ function catalogEntryFromDocument(
     year: doc.year,
     teamCount: doc.teams.length,
     gameCount: doc.games.length,
+    championName: summary.championName,
   };
 }
 

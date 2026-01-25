@@ -1,0 +1,80 @@
+{
+  "id": "2023-east-mini",
+  "name": "2023 NCAA East Region (mini bracket)",
+  "year": 2023,
+  "teams": [
+    { "id": "purdue", "name": "Purdue", "seed": 1, "rating": 1685 },
+    { "id": "marquette", "name": "Marquette", "seed": 2, "rating": 1660 },
+    { "id": "tennessee", "name": "Tennessee", "seed": 3, "rating": 1650 },
+    { "id": "uconn", "name": "UConn", "seed": 4, "rating": 1615 },
+    { "id": "duke", "name": "Duke", "seed": 5, "rating": 1610 },
+    { "id": "kentucky", "name": "Kentucky", "seed": 6, "rating": 1595 },
+    { "id": "northwestern", "name": "Northwestern", "seed": 7, "rating": 1540 },
+    { "id": "louisiana", "name": "Louisiana", "seed": 8, "rating": 1450 }
+  ],
+  "games": [
+    {
+      "round": 0,
+      "slot": 0,
+      "teamAId": "purdue",
+      "teamBId": "louisiana",
+      "scoreA": 87,
+      "scoreB": 56,
+      "winnerId": "purdue"
+    },
+    {
+      "round": 0,
+      "slot": 1,
+      "teamAId": "uconn",
+      "teamBId": "duke",
+      "scoreA": 65,
+      "scoreB": 55,
+      "winnerId": "uconn"
+    },
+    {
+      "round": 0,
+      "slot": 2,
+      "teamAId": "marquette",
+      "teamBId": "northwestern",
+      "scoreA": 82,
+      "scoreB": 55,
+      "winnerId": "marquette"
+    },
+    {
+      "round": 0,
+      "slot": 3,
+      "teamAId": "tennessee",
+      "teamBId": "kentucky",
+      "scoreA": 56,
+      "scoreB": 55,
+      "winnerId": "tennessee"
+    },
+    {
+      "round": 1,
+      "slot": 0,
+      "teamAId": "purdue",
+      "teamBId": "uconn",
+      "scoreA": 60,
+      "scoreB": 70,
+      "winnerId": "uconn"
+    },
+    {
+      "round": 1,
+      "slot": 1,
+      "teamAId": "marquette",
+      "teamBId": "tennessee",
+      "scoreA": 69,
+      "scoreB": 51,
+      "winnerId": "marquette"
+    },
+    {
+      "round": 2,
+      "slot": 0,
+      "teamAId": "uconn",
+      "teamBId": "marquette",
+      "scoreA": 70,
+      "scoreB": 52,
+      "winnerId": "uconn"
+    }
+  ]
+}

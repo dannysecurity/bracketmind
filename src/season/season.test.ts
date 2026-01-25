@@ -12,6 +12,7 @@ import {
   hydrateBracketResults,
   loadSeasonBracket,
 } from "./hydrateResults.js";
+import { loadSeasonFixture } from "./loadFixture.js";
 import { parseSeasonFile, parseSeasonJson } from "./parseSeason.js";
 import { preGameUpsetProbability, replaySeasonRatings } from "./replayRatings.js";
 import { summarizeSeason } from "./summarizeSeason.js";
@@ -62,6 +63,12 @@ describe("parseSeasonJson", () => {
     expect(doc.teams).toHaveLength(8);
     expect(doc.games).toHaveLength(7);
   });
+
+  it("loads bundled fixtures by catalog alias", () => {
+    const doc = loadSeasonFixture("@2023-east-mini");
+    expect(doc.id).toBe("2023-east-mini");
+    expect(doc.teams).toHaveLength(8);
+  });
 });
 
 describe("loadSeasonBracket", () => {
@@ -76,6 +83,14 @@ describe("loadSeasonBracket", () => {
     const purdue = purdueSlot?.teamA?.name === "Purdue" ? purdueSlot.teamA : purdueSlot?.teamB;
 
     expect(purdue?.seed).toBe(4);
+  });
+
+  it("hydrates the 2023 east mini bracket with UConn as champion", () => {
+    const doc = loadFixture("2023-east-mini.json");
+    const bracket = loadSeasonBracket(doc);
+
+    assertBracketSimulationInvariants(bracket);
+    expect(getSeasonChampion(doc).name).toBe("UConn");
   });
 
   it("hydrates an 8-team bracket with official seed placement", () => {
@@ -202,6 +217,7 @@ describe("summarizeSeason", () => {
 describe("round-trip fixture integrity", () => {
   it("preserves JSON fixtures through parse and stringify", () => {
     for (const file of [
+      "2023-east-mini.json",
       "2024-east-mini.json",
       "2023-midwest-final-four.json",
       "2024-title-game.json",
