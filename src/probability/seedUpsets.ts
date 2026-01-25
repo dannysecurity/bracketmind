@@ -65,6 +65,14 @@ export interface UpsetOutlookOptions {
   historicalWeight?: number;
 }
 
+export interface MatchupUpsetForecast {
+  eloUpsetProbability: number | null;
+  historicalUpsetProbability: number | null;
+  historicalRateSource: SeedUpsetRateSource | null;
+  /** Blended upset probability; equals Elo when seeds or Elo are unavailable. */
+  upsetProbability: number | null;
+}
+
 const DEFAULT_HISTORICAL_WEIGHT = 0.35;
 
 function canonicalPairKey(favoriteSeed: number, underdogSeed: number): string {
@@ -121,6 +129,37 @@ export function blendUpsetProbabilities(
   return eloProbability * (1 - weight) + historicalProbability * weight;
 }
 
+/** Forecast upset probability for a pairing, blending Elo with historical seed rates when possible. */
+export function forecastMatchupUpset(
+  teamA: Team,
+  teamB: Team,
+  seedA: number | null,
+  seedB: number | null,
+  historicalWeight = DEFAULT_HISTORICAL_WEIGHT
+): MatchupUpsetForecast {
+  const eloUpsetProbability = matchupUpsetProbability(teamA, teamB);
+  if (eloUpsetProbability === null || seedA === null || seedB === null) {
+    return {
+      eloUpsetProbability,
+      historicalUpsetProbability: null,
+      historicalRateSource: null,
+      upsetProbability: eloUpsetProbability,
+    };
+  }
+
+  const lookup = lookupHistoricalSeedUpsetRate(seedA, seedB);
+  return {
+    eloUpsetProbability,
+    historicalUpsetProbability: lookup.historicalRate,
+    historicalRateSource: lookup.source,
+    upsetProbability: blendUpsetProbabilities(
+      eloUpsetProbability,
+      lookup.historicalRate,
+      historicalWeight
+    ),
+  };
+}
+
 function buildRoundOneOutlook(
   slot: number,
   teamA: Team,
@@ -147,16 +186,14 @@ function buildRoundOneOutlook(
     };
   }
 
+  const forecast = forecastMatchupUpset(
+    teamA,
+    teamB,
+    seedA,
+    seedB,
+    historicalWeight
+  );
   const lookup = lookupHistoricalSeedUpsetRate(seedA, seedB);
-  const eloUpsetProbability = matchupUpsetProbability(teamA, teamB);
-  const blendedUpsetProbability =
-    eloUpsetProbability === null
-      ? null
-      : blendUpsetProbabilities(
-          eloUpsetProbability,
-          lookup.historicalRate,
-          historicalWeight
-        );
 
   return {
     slot,
@@ -166,10 +203,10 @@ function buildRoundOneOutlook(
     seedB,
     favoriteSeed: lookup.favoriteSeed,
     underdogSeed: lookup.underdogSeed,
-    eloUpsetProbability,
-    historicalUpsetProbability: lookup.historicalRate,
-    historicalRateSource: lookup.source,
-    blendedUpsetProbability,
+    eloUpsetProbability: forecast.eloUpsetProbability,
+    historicalUpsetProbability: forecast.historicalUpsetProbability,
+    historicalRateSource: forecast.historicalRateSource,
+    blendedUpsetProbability: forecast.upsetProbability,
     isByeMatch: false,
   };
 }

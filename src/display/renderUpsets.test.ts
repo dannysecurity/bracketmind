@@ -12,7 +12,9 @@ describe("renderUpsetsSection", () => {
     expect(output).toContain("Final");
     expect(output).toContain("Most Likely Upset");
     expect(output).toContain("#2 Kansas vs #3 UConn");
-    expect(output).toContain("upset chance");
+    expect(output).toContain("Elo");
+    expect(output).toContain("historical");
+    expect(output).toContain("blended upset chance");
   });
 
   it("notes bye fields without playable round-one upsets beyond byes", () => {

@@ -3,6 +3,7 @@ import { createBracket, parseTeams } from "../bracket.js";
 import {
   analyzeRoundOneUpsetOutlook,
   blendUpsetProbabilities,
+  forecastMatchupUpset,
   lookupHistoricalSeedUpsetRate,
 } from "./seedUpsets.js";
 
@@ -55,6 +56,16 @@ describe("blendUpsetProbabilities", () => {
 
   it("linearly blends at the default weight", () => {
     expect(blendUpsetProbabilities(0.4, 0.2)).toBeCloseTo(0.33, 5);
+  });
+});
+
+describe("forecastMatchupUpset", () => {
+  it("returns Elo-only forecast when seeds are missing", () => {
+    const teams = parseTeams(["Alpha:1600", "Beta:1500"]);
+    const forecast = forecastMatchupUpset(teams[0], teams[1], null, null);
+
+    expect(forecast.historicalUpsetProbability).toBeNull();
+    expect(forecast.upsetProbability).toBe(forecast.eloUpsetProbability);
   });
 });
 

@@ -5,11 +5,13 @@ import {
   parseTeams,
   simulateBracket,
 } from "../bracket.js";
+import { createBracket, parseTeams } from "../bracket.js";
 import { monteCarloChampionshipRates } from "../simulator.js";
 import {
   analyzeUpsetLandscape,
   mostLikelyUpsetCandidate,
 } from "./analytics.js";
+import { analyzeRoundOneUpsetOutlook } from "./seedUpsets.js";
 import {
   computeChampionshipProbabilities,
   computeSubtreeDistribution,
@@ -104,5 +106,40 @@ describe("analyzeUpsetLandscape", () => {
 
     expect(best?.seedA).toBe(2);
     expect(best?.seedB).toBe(3);
+  });
+
+  it("blends round-one upset odds with historical seed rates by default", () => {
+    const teams = parseTeams(["S1:1700", "S2:1600", "S3:1550", "S4:1500"]);
+    const bracket = createBracket(teams);
+    const landscape = analyzeUpsetLandscape(teams);
+    const roundOneOutlook = analyzeRoundOneUpsetOutlook(bracket);
+    const landscapeMatchup = landscape.roundSummaries[0].candidates.find(
+      (candidate) => candidate.seedA === 2 && candidate.seedB === 3
+    )!;
+    const outlookMatchup = roundOneOutlook.matchups.find(
+      (matchup) => matchup.seedA === 2 && matchup.seedB === 3
+    )!;
+
+    expect(landscapeMatchup.historicalUpsetProbability).toBe(
+      outlookMatchup.historicalUpsetProbability
+    );
+    expect(landscapeMatchup.upsetProbability).toBeCloseTo(
+      outlookMatchup.blendedUpsetProbability!,
+      5
+    );
+    expect(landscapeMatchup.upsetProbability).not.toBe(
+      landscapeMatchup.eloUpsetProbability
+    );
+  });
+
+  it("uses pure Elo upset odds when historical weight is zero", () => {
+    const teams = parseTeams(["S1:1700", "S2:1600", "S3:1550", "S4:1500"]);
+    const landscape = analyzeUpsetLandscape(teams, { historicalWeight: 0 });
+    const candidate = landscape.roundSummaries[0].candidates.find(
+      (entry) => entry.seedA === 2 && entry.seedB === 3
+    )!;
+
+    expect(candidate.upsetProbability).toBe(candidate.eloUpsetProbability);
+    expect(candidate.historicalUpsetProbability).not.toBeNull();
   });
 });

@@ -3,6 +3,7 @@ export type {
   RoundUpsetSummary,
   UpsetCandidate,
   UpsetLandscape,
+  UpsetOutlookOptions,
 } from "./analytics.js";
 export {
   computeChampionshipProbabilities,
@@ -15,9 +16,11 @@ export type { SeededTeam } from "./seeds.js";
 export {
   analyzeRoundOneUpsetOutlook,
   blendUpsetProbabilities,
+  forecastMatchupUpset,
   lookupHistoricalSeedUpsetRate,
 } from "./seedUpsets.js";
 export type {
+  MatchupUpsetForecast,
   RoundOneUpsetOutlook,
   SeedUpsetRateLookup,
   SeedUpsetRateSource,

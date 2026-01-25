@@ -2,11 +2,12 @@ import {
   analyzeUpsetLandscape,
   type RoundUpsetSummary,
   type UpsetCandidate,
+  type UpsetOutlookOptions,
 } from "../probability/analytics.js";
 import type { Team } from "../types.js";
 import { ColorOptions, dim, heading } from "./colors.js";
 
-export interface UpsetsRenderOptions extends ColorOptions {}
+export interface UpsetsRenderOptions extends ColorOptions, UpsetOutlookOptions {}
 
 function formatPercent(probability: number): string {
   return `${Math.round(probability * 100)}%`;
@@ -21,7 +22,10 @@ function formatMatchupPair(candidate: UpsetCandidate): string {
 }
 
 function formatCandidateLine(candidate: UpsetCandidate): string {
-  const upsetLine = `${formatPercent(candidate.upsetProbability)} upset chance`;
+  const upsetLine =
+    candidate.historicalUpsetProbability !== null
+      ? `${formatPercent(candidate.eloUpsetProbability)} Elo · ${formatPercent(candidate.historicalUpsetProbability)} historical · ${formatPercent(candidate.upsetProbability)} blended upset chance`
+      : `${formatPercent(candidate.upsetProbability)} upset chance`;
   if (candidate.isKnownMatchup) {
     return `  ${formatMatchupPair(candidate)} — ${upsetLine}`;
   }
@@ -66,12 +70,14 @@ export function renderUpsetsSection(
   teams: Team[],
   options: UpsetsRenderOptions = { enabled: false }
 ): string[] {
-  const landscape = analyzeUpsetLandscape(teams);
+  const landscape = analyzeUpsetLandscape(teams, {
+    historicalWeight: options.historicalWeight,
+  });
   const lines: string[] = [
     heading("Tournament Upset Landscape", options),
     "",
     dim(
-      "Analytical upset odds using fixed Elo ratings and bracket path weights.",
+      "Blends Elo upset odds with historical NCAA seed rates across every round.",
       options
     ),
     "",

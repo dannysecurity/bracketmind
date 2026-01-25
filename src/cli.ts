@@ -55,6 +55,24 @@ function supportsColor(): boolean {
   return Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
 }
 
+function parseHistoricalWeight(args: string[]): {
+  historicalWeight?: number;
+  filtered: string[];
+} {
+  const flag = args.indexOf("--historical-weight");
+  if (flag < 0) {
+    return { filtered: args };
+  }
+
+  const value = parseFloat(args[flag + 1] ?? "");
+  const historicalWeight = Number.isNaN(value) ? undefined : value;
+  const filtered = args.filter(
+    (value, index) => value !== "--historical-weight" && index !== flag + 1
+  );
+
+  return { historicalWeight, filtered };
+}
+
 function parseSimulateArgs(args: string[]): {
   names: string[];
   format: BracketFormat;
@@ -114,26 +132,32 @@ function parsePredictArgs(args: string[]): {
 function parseSeedingsArgs(args: string[]): {
   names: string[];
   color: ColorOptions;
+  historicalWeight?: number;
 } {
-  const noColor = args.includes("--no-color");
-  const names = args.filter((value) => value !== "--no-color").slice(1);
+  const { historicalWeight, filtered } = parseHistoricalWeight(args);
+  const noColor = filtered.includes("--no-color");
+  const names = filtered.filter((value) => value !== "--no-color").slice(1);
 
   return {
     names,
     color: { enabled: !noColor && supportsColor() },
+    historicalWeight,
   };
 }
 
 function parseUpsetsArgs(args: string[]): {
   names: string[];
   color: ColorOptions;
+  historicalWeight?: number;
 } {
-  const noColor = args.includes("--no-color");
-  const names = args.filter((value) => value !== "--no-color").slice(1);
+  const { historicalWeight, filtered } = parseHistoricalWeight(args);
+  const noColor = filtered.includes("--no-color");
+  const names = filtered.filter((value) => value !== "--no-color").slice(1);
 
   return {
     names,
     color: { enabled: !noColor && supportsColor() },
+    historicalWeight,
   };
 }
 
@@ -326,32 +350,38 @@ export function runCli(args: string[]): void {
     }
 
     case "seedings": {
-      const { names, color } = parseSeedingsArgs(args);
+      const { names, color, historicalWeight } = parseSeedingsArgs(args);
       if (names.length < 2) {
         console.error(
-          "Usage: bracketmind seedings <team1> <team2> [...] [--no-color]"
+          "Usage: bracketmind seedings <team1> <team2> [...] [--historical-weight 0-1] [--no-color]"
         );
         process.exit(1);
       }
 
       const teams = parseTeams(names);
-      for (const line of renderSeedingsSection(teams, color)) {
+      for (const line of renderSeedingsSection(teams, {
+        ...color,
+        historicalWeight,
+      })) {
         console.log(line);
       }
       break;
     }
 
     case "upsets": {
-      const { names, color } = parseUpsetsArgs(args);
+      const { names, color, historicalWeight } = parseUpsetsArgs(args);
       if (names.length < 2) {
         console.error(
-          "Usage: bracketmind upsets <team1> <team2> [...] [--no-color]"
+          "Usage: bracketmind upsets <team1> <team2> [...] [--historical-weight 0-1] [--no-color]"
         );
         process.exit(1);
       }
 
       const teams = parseTeams(names);
-      for (const line of renderUpsetsSection(teams, color)) {
+      for (const line of renderUpsetsSection(teams, {
+        ...color,
+        historicalWeight,
+      })) {
         console.log(line);
       }
       break;
@@ -472,9 +502,9 @@ Commands:
                                    Run a single bracket simulation
   predict <teams...> [--iterations N] [--dynamic-ratings] [--no-color]
                                    Estimate championship odds via Monte Carlo
-  seedings <teams...> [--no-color]
+  seedings <teams...> [--historical-weight 0-1] [--no-color]
                                    Show rating-based seeds and round 1 upset odds
-  upsets <teams...> [--no-color]
+  upsets <teams...> [--historical-weight 0-1] [--no-color]
                                    Analyze upset probabilities for every round
   import season <path.json> [--format list|tree] [--no-color]
                                    Load a historical season fixture and display results

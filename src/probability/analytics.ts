@@ -4,8 +4,14 @@ import { roundLabel } from "../display/roundLabels.js";
 import type { Bracket, Team } from "../types.js";
 import { isByeTeam } from "../types.js";
 import { computeSubtreeDistribution } from "./bracketPaths.js";
-import { matchupUpsetProbability } from "./matchup.js";
 import { buildSeedMap } from "./seeds.js";
+import {
+  forecastMatchupUpset,
+  type SeedUpsetRateSource,
+  type UpsetOutlookOptions,
+} from "./seedUpsets.js";
+
+export type { UpsetOutlookOptions };
 
 export interface UpsetCandidate {
   round: number;
@@ -17,7 +23,12 @@ export interface UpsetCandidate {
   seedB: number | null;
   /** Probability both teams reach this bracket slot. */
   meetingProbability: number;
-  /** Pre-game probability the lower-rated team wins, given they meet. */
+  /** Pre-game Elo upset probability for the lower-rated team. */
+  eloUpsetProbability: number;
+  /** Historical NCAA seed-pair upset rate when seeds are known. */
+  historicalUpsetProbability: number | null;
+  historicalRateSource: SeedUpsetRateSource | null;
+  /** Blended upset probability used for ranking and expectations. */
   upsetProbability: number;
   /** meetingProbability × upsetProbability — expected upset mass at this slot. */
   upsetExpectation: number;
@@ -43,21 +54,27 @@ function seedForTeam(seeds: Map<string, number>, team: Team): number | null {
   return isByeTeam(team) ? null : (seeds.get(team.id) ?? team.seed ?? null);
 }
 
-function buildKnownMatchupCandidate(
-  bracket: Bracket,
+function buildUpsetCandidate(
   round: number,
   slot: number,
-  seeds: Map<string, number>
+  bracket: Bracket,
+  teamA: Team,
+  teamB: Team,
+  seeds: Map<string, number>,
+  meetingProbability: number,
+  isKnownMatchup: boolean,
+  historicalWeight: number
 ): UpsetCandidate | null {
-  const match = bracket.matches[matchIndex(round, slot, bracket.rounds)];
-  const teamA = match.teamA;
-  const teamB = match.teamB;
-  if (!teamA || !teamB) {
-    return null;
-  }
-
-  const upsetProbability = matchupUpsetProbability(teamA, teamB);
-  if (upsetProbability === null) {
+  const seedA = seedForTeam(seeds, teamA);
+  const seedB = seedForTeam(seeds, teamB);
+  const forecast = forecastMatchupUpset(
+    teamA,
+    teamB,
+    seedA,
+    seedB,
+    historicalWeight
+  );
+  if (forecast.upsetProbability === null) {
     return null;
   }
 
@@ -67,20 +84,51 @@ function buildKnownMatchupCandidate(
     roundLabel: roundLabel(round, bracket.rounds),
     teamA,
     teamB,
-    seedA: seedForTeam(seeds, teamA),
-    seedB: seedForTeam(seeds, teamB),
-    meetingProbability: 1,
-    upsetProbability,
-    upsetExpectation: upsetProbability,
-    isKnownMatchup: true,
+    seedA,
+    seedB,
+    meetingProbability,
+    eloUpsetProbability: forecast.eloUpsetProbability!,
+    historicalUpsetProbability: forecast.historicalUpsetProbability,
+    historicalRateSource: forecast.historicalRateSource,
+    upsetProbability: forecast.upsetProbability,
+    upsetExpectation: meetingProbability * forecast.upsetProbability,
+    isKnownMatchup,
   };
+}
+
+function buildKnownMatchupCandidate(
+  bracket: Bracket,
+  round: number,
+  slot: number,
+  seeds: Map<string, number>,
+  historicalWeight: number
+): UpsetCandidate | null {
+  const match = bracket.matches[matchIndex(round, slot, bracket.rounds)];
+  const teamA = match.teamA;
+  const teamB = match.teamB;
+  if (!teamA || !teamB) {
+    return null;
+  }
+
+  return buildUpsetCandidate(
+    round,
+    slot,
+    bracket,
+    teamA,
+    teamB,
+    seeds,
+    1,
+    true,
+    historicalWeight
+  );
 }
 
 function buildExpectedMatchupCandidates(
   bracket: Bracket,
   round: number,
   slot: number,
-  seeds: Map<string, number>
+  seeds: Map<string, number>,
+  historicalWeight: number
 ): UpsetCandidate[] {
   const leftDist = computeSubtreeDistribution(bracket, round - 1, slot * 2);
   const rightDist = computeSubtreeDistribution(
@@ -94,25 +142,20 @@ function buildExpectedMatchupCandidates(
     for (const [idB, reachB] of rightDist) {
       const teamA = bracket.teams.find((team) => team.id === idA)!;
       const teamB = bracket.teams.find((team) => team.id === idB)!;
-      const upsetProbability = matchupUpsetProbability(teamA, teamB);
-      if (upsetProbability === null) {
-        continue;
-      }
-
-      const meetingProbability = reachA * reachB;
-      candidates.push({
+      const candidate = buildUpsetCandidate(
         round,
         slot,
-        roundLabel: roundLabel(round, bracket.rounds),
+        bracket,
         teamA,
         teamB,
-        seedA: seedForTeam(seeds, teamA),
-        seedB: seedForTeam(seeds, teamB),
-        meetingProbability,
-        upsetProbability,
-        upsetExpectation: meetingProbability * upsetProbability,
-        isKnownMatchup: false,
-      });
+        seeds,
+        reachA * reachB,
+        false,
+        historicalWeight
+      );
+      if (candidate) {
+        candidates.push(candidate);
+      }
     }
   }
 
@@ -122,20 +165,33 @@ function buildExpectedMatchupCandidates(
 function summarizeRound(
   bracket: Bracket,
   round: number,
-  seeds: Map<string, number>
+  seeds: Map<string, number>,
+  historicalWeight: number
 ): RoundUpsetSummary {
   const slots = Math.pow(2, bracket.rounds - round - 1);
   const candidates: UpsetCandidate[] = [];
 
   for (let slot = 0; slot < slots; slot++) {
     if (round === 0) {
-      const candidate = buildKnownMatchupCandidate(bracket, round, slot, seeds);
+      const candidate = buildKnownMatchupCandidate(
+        bracket,
+        round,
+        slot,
+        seeds,
+        historicalWeight
+      );
       if (candidate) {
         candidates.push(candidate);
       }
     } else {
       candidates.push(
-        ...buildExpectedMatchupCandidates(bracket, round, slot, seeds)
+        ...buildExpectedMatchupCandidates(
+          bracket,
+          round,
+          slot,
+          seeds,
+          historicalWeight
+        )
       );
     }
   }
@@ -160,13 +216,19 @@ function summarizeRound(
 }
 
 /** Analyze upset probabilities for every bracket round using path-weighted Elo math. */
-export function analyzeUpsetLandscape(teams: Team[]): UpsetLandscape {
+export function analyzeUpsetLandscape(
+  teams: Team[],
+  options: UpsetOutlookOptions = {}
+): UpsetLandscape {
+  const historicalWeight = options.historicalWeight ?? 0.35;
   const bracket = createBracket(teams);
   const seeds = buildSeedMap(bracket.teams);
   const roundSummaries: RoundUpsetSummary[] = [];
 
   for (let round = 0; round < bracket.rounds; round++) {
-    roundSummaries.push(summarizeRound(bracket, round, seeds));
+    roundSummaries.push(
+      summarizeRound(bracket, round, seeds, historicalWeight)
+    );
   }
 
   const allCandidates = roundSummaries.flatMap((summary) => summary.candidates);

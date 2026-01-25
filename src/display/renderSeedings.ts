@@ -4,10 +4,11 @@ import {
   type RoundOneMatchup,
 } from "../seeding.js";
 import type { RoundOneUpsetOutlook } from "../probability/seedUpsets.js";
+import type { UpsetOutlookOptions } from "../probability/seedUpsets.js";
 import type { Team } from "../types.js";
 import { ColorOptions, dim, heading } from "./colors.js";
 
-export interface SeedingsRenderOptions extends ColorOptions {}
+export interface SeedingsRenderOptions extends ColorOptions, UpsetOutlookOptions {}
 
 function formatPercent(probability: number): string {
   return `${Math.round(probability * 100)}%`;
@@ -54,7 +55,9 @@ export function renderSeedingsSection(
   teams: Team[],
   options: SeedingsRenderOptions = { enabled: false }
 ): string[] {
-  const { seededTeams, roundOneMatchups, upsetOutlook } = analyzeSeeding(teams);
+  const { seededTeams, roundOneMatchups, upsetOutlook } = analyzeSeeding(teams, {
+    historicalWeight: options.historicalWeight,
+  });
   const lines: string[] = [heading("Bracket Seedings", options), ""];
 
   for (const entry of seededTeams) {

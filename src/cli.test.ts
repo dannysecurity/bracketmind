@@ -182,6 +182,42 @@ describe("runCli", () => {
     expect(stdout).toContain("Most Likely Upset");
   });
 
+  it("accepts historical-weight on upsets command", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "upsets",
+        "Duke:1650",
+        "Kansas:1600",
+        "UConn:1550",
+        "Purdue:1500",
+        "--historical-weight",
+        "0",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Tournament Upset Landscape");
+    expect(stdout).toContain("43% Elo · 48% historical · 43% blended upset chance");
+  });
+
+  it("accepts historical-weight on seedings command", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "seedings",
+        "Duke:1650",
+        "Kansas:1600",
+        "UConn:1550",
+        "Purdue:1500",
+        "--historical-weight",
+        "1",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Round 1 Upset Outlook");
+    expect(stdout).toContain("historical ·");
+  });
+
   it("exits with usage when upsets has too few teams", () => {
     const { exitCode, stderr } = captureOutput(() => {
       runCli(["upsets", "Alpha"]);
