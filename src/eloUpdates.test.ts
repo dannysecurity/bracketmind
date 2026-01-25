@@ -4,6 +4,7 @@ import {
   computeActualScores,
   contextualKFactor,
   roundKMultiplier,
+  updateRatingsWithContext,
   updateTeamRatingsWithContext,
 } from "./eloUpdates.js";
 import { createTeamRating } from "./ratings.js";
@@ -89,6 +90,12 @@ describe("computeActualScores", () => {
     expect(favorite[1]).toBeGreaterThan(even[1]);
   });
 
+  it("returns even actual scores on a tied game", () => {
+    expect(computeActualScores(70, 70, gameContext({ margin: 0 }), 1700, 1500)).toEqual([
+      0.5, 0.5,
+    ]);
+  });
+
   it("boosts the underdog on an upset", () => {
     const expected = computeActualScores(
       80,
@@ -106,6 +113,21 @@ describe("computeActualScores", () => {
     );
     expect(upset[0]).toBeGreaterThan(expected[0]);
     expect(upset[1]).toBeLessThan(expected[1]);
+  });
+});
+
+describe("updateRatingsWithContext", () => {
+  it("shifts rating toward the underdog when a favorite ties", () => {
+    const [newFavorite, newUnderdog] = updateRatingsWithContext(
+      1700,
+      1500,
+      0.5,
+      0.5,
+      32
+    );
+
+    expect(newFavorite).toBeLessThan(1700);
+    expect(newUnderdog).toBeGreaterThan(1500);
   });
 });
 
@@ -157,6 +179,21 @@ describe("updateTeamRatingsWithContext", () => {
     );
 
     expect(finalWinner.rating - 1500).toBeGreaterThan(roundOneWinner.rating - 1500);
+  });
+
+  it("shifts rating toward the underdog when a favorite ties", () => {
+    const favorite = createTeamRating(1700);
+    const underdog = createTeamRating(1500);
+    const [newFavorite, newUnderdog] = updateTeamRatingsWithContext(
+      favorite,
+      underdog,
+      70,
+      70,
+      gameContext({ margin: 0 })
+    );
+
+    expect(newFavorite.rating).toBeLessThan(favorite.rating);
+    expect(newUnderdog.rating).toBeGreaterThan(underdog.rating);
   });
 
   it("preserves approximate zero-sum rating transfer", () => {

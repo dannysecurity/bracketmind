@@ -1,4 +1,5 @@
 import {
+  DEFAULT_K_FACTOR,
   EVEN_MATCHUP_EXPECTED_MARGIN,
   expectedMarginFromRatings,
   expectedScore,
@@ -19,7 +20,6 @@ export interface GameRatingContext {
 }
 
 const DEFAULT_MOV_CAP = 20;
-const BASE_K = 32;
 const UPSET_BONUS = 0.08;
 
 /**
@@ -62,7 +62,7 @@ export function roundKMultiplier(round: number, totalRounds: number): number {
 export function contextualKFactor(
   team: TeamRating,
   context: GameRatingContext,
-  baseK = BASE_K
+  baseK = DEFAULT_K_FACTOR
 ): number {
   const provisional = kFactorForTeam(team.gamesPlayed, baseK);
   return Math.round(provisional * roundKMultiplier(context.round, context.totalRounds));
