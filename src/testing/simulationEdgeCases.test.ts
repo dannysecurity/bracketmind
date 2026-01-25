@@ -470,6 +470,113 @@ describe("simulateGame edge cases", () => {
     expect(result.margin).toBe(result.scoreB - result.scoreA);
   });
 
+  it("assigns the higher box score to team A when they win as the underdog", () => {
+    const underdog = team("Underdog", 1400);
+    const favorite = team("Favorite", 1600);
+    const probabilityA = winProbabilityFor(underdog.rating, favorite.rating);
+
+    const result = simulateGame(underdog, favorite, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+    });
+
+    expect(probabilityA).toBeLessThan(0.5);
+    expect(result.winner).toBe(underdog);
+    expect(result.scoreA).toBeGreaterThan(result.scoreB);
+    expect(result.isUpset).toBe(true);
+    expect(result.margin).toBe(result.scoreA - result.scoreB);
+  });
+
+  it("pins winner score spread at baseline and ceiling for the third RNG draw", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const marginNoise = Math.floor(0 * 11) - 5;
+    const margin = Math.max(1, expectedMargin(teamA, teamB) + marginNoise);
+
+    const minSpread = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0, 0]),
+    });
+    const maxSpread = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0, 0.999999]),
+    });
+
+    expect(minSpread.scoreA).toBe(68 + Math.floor(margin / 2));
+    expect(minSpread.scoreB).toBe(minSpread.scoreA - margin);
+    expect(maxSpread.scoreA).toBe(68 + 11 + Math.floor(margin / 2));
+    expect(maxSpread.scoreB).toBe(maxSpread.scoreA - margin);
+  });
+
+  it("never produces tied scores across many deterministic rolls", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1600);
+
+    for (let seed = 1; seed <= 50; seed++) {
+      const result = simulateGame(teamA, teamB, {
+        rng: createSeededRng(seed),
+      });
+
+      expect(result.scoreA).not.toBe(result.scoreB);
+      expect(result.margin).toBeGreaterThanOrEqual(1);
+      assertWinnerHasHigherScore(result, teamA);
+    }
+  });
+
+  it("increments gamesPlayed on both teams across chained simulateGame calls", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+    const rolls = [0.01, 0.5, 0.5];
+
+    for (let i = 0; i < 3; i++) {
+      simulateGame(teamA, teamB, {
+        rng: sequenceRng(rolls),
+        tournamentState: state,
+      });
+    }
+
+    expect(state.ratings.get(teamA.id)?.gamesPlayed).toBe(3);
+    expect(state.ratings.get(teamB.id)?.gamesPlayed).toBe(3);
+  });
+
+  it("conserves total rating points when simulateGame updates tournament state", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+    const startingTotal =
+      (state.ratings.get(teamA.id)?.rating ?? 0) +
+      (state.ratings.get(teamB.id)?.rating ?? 0);
+
+    simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0.5, 0.5]),
+      tournamentState: state,
+    });
+
+    const endingTotal =
+      (state.ratings.get(teamA.id)?.rating ?? 0) +
+      (state.ratings.get(teamB.id)?.rating ?? 0);
+
+    expect(endingTotal).toBe(startingTotal);
+  });
+
+  it("compresses realized margin below the projected spread when the loser floor binds", () => {
+    const favorite = team("Favorite", 2400);
+    const underdog = team("Longshot", 800);
+    const rolls = [0.01, 0.99, 0.99];
+    const marginNoise = Math.floor(rolls[1] * 11) - 5;
+    const projectedMargin = Math.max(
+      1,
+      expectedMargin(favorite, underdog) + marginNoise
+    );
+
+    const result = simulateGame(favorite, underdog, {
+      rng: sequenceRng(rolls),
+    });
+
+    expect(result.winner).toBe(favorite);
+    expect(result.scoreB).toBe(55);
+    expect(result.margin).toBe(result.scoreA - result.scoreB);
+    expect(result.margin).toBeLessThan(projectedMargin);
+  });
+
   it("ignores round metadata when no tournament state is provided", () => {
     const teamA = team("Alpha", 1500);
     const teamB = team("Beta", 1500);
@@ -976,6 +1083,27 @@ describe("monteCarloGameOutcomes edge cases", () => {
     );
     expect(result.marginPercentiles.p50).toBeLessThanOrEqual(
       Math.max(...[manual.marginPercentiles.p10, manual.marginPercentiles.p90])
+    );
+  });
+
+  it("interpolates margin percentiles when exactly three trials are run", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const seed = 3141;
+    const rng = createSeededRng(seed);
+
+    const manual = computeGameOutcomeAggregates(teamA, teamB, 3, rng);
+    const result = monteCarloGameOutcomes(teamA, teamB, 3, {
+      rng: createSeededRng(seed),
+    });
+
+    expect(result.marginStdDev).toBeGreaterThan(0);
+    expect(result.marginPercentiles).toEqual(manual.marginPercentiles);
+    expect(result.marginPercentiles.p10).toBeLessThanOrEqual(
+      result.marginPercentiles.p50
+    );
+    expect(result.marginPercentiles.p50).toBeLessThanOrEqual(
+      result.marginPercentiles.p90
     );
   });
 });
