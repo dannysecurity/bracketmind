@@ -89,6 +89,30 @@ describe("analyzeRoundOneUpsetOutlook", () => {
     expect(outlook.mostLikelyUpset?.seedB).toBe(3);
   });
 
+  it("uses canonical NCAA first-round rates for a 16-team rating-seeded bracket", () => {
+    const teams = parseTeams(
+      Array.from({ length: 16 }, (_, index) => `S${index + 1}`)
+    ).map((team, index) => ({
+      ...team,
+      rating: 2000 - index * 10,
+    }));
+    const outlook = analyzeRoundOneUpsetOutlook(createBracket(teams));
+    const oneSixteen = outlook.matchups.find(
+      (matchup) => matchup.seedA === 1 && matchup.seedB === 16
+    );
+    const eightNine = outlook.matchups.find(
+      (matchup) => matchup.seedA === 8 && matchup.seedB === 9
+    );
+
+    expect(outlook.matchups).toHaveLength(8);
+    expect(oneSixteen?.historicalUpsetProbability).toBe(0.01);
+    expect(oneSixteen?.historicalRateSource).toBe("canonical-first-round");
+    expect(eightNine?.historicalUpsetProbability).toBe(0.48);
+    expect(eightNine?.historicalRateSource).toBe("canonical-first-round");
+    expect(outlook.mostLikelyUpset?.seedA).toBe(8);
+    expect(outlook.mostLikelyUpset?.seedB).toBe(9);
+  });
+
   it("uses the seed-gap model for rating-based eight-team first-round pairings", () => {
     const teams = parseTeams([
       "S1",
