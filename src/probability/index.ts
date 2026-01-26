@@ -16,6 +16,7 @@ export type { SeededTeam } from "./seeds.js";
 export {
   analyzeRoundOneUpsetOutlook,
   blendUpsetProbabilities,
+  DEFAULT_HISTORICAL_WEIGHT,
   forecastMatchupUpset,
   lookupHistoricalSeedUpsetRate,
 } from "./seedUpsets.js";

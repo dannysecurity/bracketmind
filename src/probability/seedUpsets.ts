@@ -73,7 +73,8 @@ export interface MatchupUpsetForecast {
   upsetProbability: number | null;
 }
 
-const DEFAULT_HISTORICAL_WEIGHT = 0.35;
+/** Default blend weight for historical NCAA seed upset rates vs Elo forecasts. */
+export const DEFAULT_HISTORICAL_WEIGHT = 0.35;
 
 function canonicalPairKey(favoriteSeed: number, underdogSeed: number): string {
   return `${favoriteSeed}-${underdogSeed}`;

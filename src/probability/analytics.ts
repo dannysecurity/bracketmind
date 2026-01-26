@@ -6,6 +6,7 @@ import { isByeTeam } from "../types.js";
 import { computeSubtreeDistribution } from "./bracketPaths.js";
 import { buildSeedMap } from "./seeds.js";
 import {
+  DEFAULT_HISTORICAL_WEIGHT,
   forecastMatchupUpset,
   type SeedUpsetRateSource,
   type UpsetOutlookOptions,
@@ -220,7 +221,8 @@ export function analyzeUpsetLandscape(
   teams: Team[],
   options: UpsetOutlookOptions = {}
 ): UpsetLandscape {
-  const historicalWeight = options.historicalWeight ?? 0.35;
+  const historicalWeight =
+    options.historicalWeight ?? DEFAULT_HISTORICAL_WEIGHT;
   const bracket = createBracket(teams);
   const seeds = buildSeedMap(bracket.teams);
   const roundSummaries: RoundUpsetSummary[] = [];
