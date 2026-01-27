@@ -1,9 +1,9 @@
 import { createBracket } from "./bracket.js";
-import { matchupUpsetProbability } from "./probability/matchup.js";
 import { buildSeedMap, buildSeededTeams } from "./probability/seeds.js";
 import type { SeededTeam } from "./probability/seeds.js";
 import {
   analyzeRoundOneUpsetOutlook,
+  forecastMatchupUpset,
   type TournamentUpsetOutlook,
   type UpsetOutlookOptions,
 } from "./probability/seedUpsets.js";
@@ -17,13 +17,19 @@ export interface RoundOneMatchup {
   teamB: Team;
   seedA: number | null;
   seedB: number | null;
-  /** Probability the lower-rated team wins; null for BYE matchups. */
+  /** Blended upset probability for the lower-rated team; null for BYE matchups. */
   upsetProbability: number | null;
+  eloUpsetProbability: number | null;
+  historicalUpsetProbability: number | null;
   isByeMatch: boolean;
 }
 
-/** Return round-one pairings with pre-game upset probabilities. */
-export function getRoundOneMatchups(bracket: Bracket): RoundOneMatchup[] {
+/** Return round-one pairings with blended pre-game upset probabilities. */
+export function getRoundOneMatchups(
+  bracket: Bracket,
+  options: UpsetOutlookOptions = {}
+): RoundOneMatchup[] {
+  const historicalWeight = options.historicalWeight;
   const seeds = buildSeedMap(bracket.teams);
 
   return bracket.matches
@@ -33,17 +39,42 @@ export function getRoundOneMatchups(bracket: Bracket): RoundOneMatchup[] {
       const teamA = match.teamA!;
       const teamB = match.teamB!;
       const isByeMatch = teamA.name === "BYE" || teamB.name === "BYE";
+      const seedA = teamA.name === "BYE" ? null : (seeds.get(teamA.id) ?? null);
+      const seedB = teamB.name === "BYE" ? null : (seeds.get(teamB.id) ?? null);
+
+      if (isByeMatch) {
+        return {
+          slot: match.slot,
+          teamA,
+          teamB,
+          seedA,
+          seedB,
+          upsetProbability: null,
+          eloUpsetProbability: null,
+          historicalUpsetProbability: null,
+          isByeMatch,
+        };
+      }
+
+      const forecast = forecastMatchupUpset(
+        teamA,
+        teamB,
+        seedA,
+        seedB,
+        historicalWeight,
+        0
+      );
 
       return {
         slot: match.slot,
         teamA,
         teamB,
-        seedA: teamA.name === "BYE" ? null : (seeds.get(teamA.id) ?? null),
-        seedB: teamB.name === "BYE" ? null : (seeds.get(teamB.id) ?? null),
-        upsetProbability: isByeMatch
-          ? null
-          : matchupUpsetProbability(teamA, teamB),
-        isByeMatch,
+        seedA,
+        seedB,
+        upsetProbability: forecast.upsetProbability,
+        eloUpsetProbability: forecast.eloUpsetProbability,
+        historicalUpsetProbability: forecast.historicalUpsetProbability,
+        isByeMatch: false,
       };
     });
 }
@@ -62,7 +93,7 @@ export function analyzeSeeding(
   const bracket = createBracket(teams);
   return {
     seededTeams: buildSeededTeams(teams),
-    roundOneMatchups: getRoundOneMatchups(bracket),
+    roundOneMatchups: getRoundOneMatchups(bracket, options),
     upsetOutlook: analyzeRoundOneUpsetOutlook(bracket, options),
   };
 }

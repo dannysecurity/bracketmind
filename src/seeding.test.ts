@@ -21,7 +21,7 @@ describe("seeding", () => {
     ]);
   });
 
-  it("returns standard round-one pairings with upset probabilities", () => {
+  it("returns round-one pairings with blended upset probabilities", () => {
     const teams = parseTeams(["S1", "S2", "S3", "S4"]).map((team, i) => ({
       ...team,
       rating: 1700 - i * 100,
@@ -35,6 +35,8 @@ describe("seeding", () => {
     expect(matchups[1].seedB).toBe(3);
     expect(matchups[0].upsetProbability).toBeGreaterThan(0);
     expect(matchups[0].upsetProbability!).toBeLessThan(0.5);
+    expect(matchups[0].eloUpsetProbability).toBeGreaterThan(0);
+    expect(matchups[0].historicalUpsetProbability).toBe(0.25);
     expect(matchups[1].upsetProbability!).toBeGreaterThan(
       matchups[0].upsetProbability!
     );

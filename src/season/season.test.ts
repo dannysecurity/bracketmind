@@ -185,6 +185,18 @@ describe("preGameUpsetProbability", () => {
     expect(upsetProb).toBeGreaterThan(0);
     expect(upsetProb).toBeLessThan(1);
   });
+
+  it("blends official seeds with Elo for later-round recorded games", () => {
+    const doc = loadFixture("2024-east-mini.json");
+    const blended = preGameUpsetProbability(doc, 1, 0);
+    const eloOnly = preGameUpsetProbability(doc, 1, 0, {
+      historicalWeight: 0,
+    });
+
+    expect(blended).not.toBe(eloOnly);
+    expect(blended).toBeGreaterThan(0);
+    expect(blended).toBeLessThan(1);
+  });
 });
 
 describe("summarizeSeason", () => {

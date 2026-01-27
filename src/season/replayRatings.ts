@@ -1,5 +1,9 @@
 import { isRatingUpset } from "../ratings.js";
-import { matchupUpsetProbability } from "../probability/matchup.js";
+import {
+  DEFAULT_HISTORICAL_WEIGHT,
+  forecastMatchupUpset,
+  type UpsetOutlookOptions,
+} from "../probability/seedUpsets.js";
 import { GameCatalog } from "../models/gameCatalog.js";
 import { createTournamentState, recordGameResult } from "../tournamentState.js";
 import type { Team, TournamentState } from "../types.js";
@@ -86,7 +90,8 @@ export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
 export function preGameUpsetProbability(
   doc: SeasonDocument,
   round: number,
-  slot: number
+  slot: number,
+  options: UpsetOutlookOptions = {}
 ): number {
   const catalog = GameCatalog.fromGames(doc.games);
   const registry = teamRegistryFromDocument(doc);
@@ -94,9 +99,19 @@ export function preGameUpsetProbability(
   const teamA = registry.require(game.teamAId);
   const teamB = registry.require(game.teamBId);
 
-  const upsetProb = matchupUpsetProbability(teamA, teamB);
-  if (upsetProb === null) {
+  const historicalWeight =
+    options.historicalWeight ?? DEFAULT_HISTORICAL_WEIGHT;
+  const forecast = forecastMatchupUpset(
+    teamA,
+    teamB,
+    teamA.seed ?? null,
+    teamB.seed ?? null,
+    historicalWeight,
+    round
+  );
+
+  if (forecast.upsetProbability === null) {
     throw new Error(`Cannot compute upset probability for BYE matchup at round ${round}, slot ${slot}`);
   }
-  return upsetProb;
+  return forecast.upsetProbability;
 }

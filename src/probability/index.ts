@@ -3,7 +3,6 @@ export type {
   RoundUpsetSummary,
   UpsetCandidate,
   UpsetLandscape,
-  UpsetOutlookOptions,
 } from "./analytics.js";
 export {
   computeChampionshipProbabilities,
@@ -18,13 +17,19 @@ export {
   blendUpsetProbabilities,
   DEFAULT_HISTORICAL_WEIGHT,
   forecastMatchupUpset,
-  lookupHistoricalSeedUpsetRate,
 } from "./seedUpsets.js";
+export {
+  lookupHistoricalSeedUpsetRate,
+  lookupHistoricalUpsetRate,
+} from "./historicalRates.js";
 export type {
   MatchupUpsetForecast,
   RoundOneUpsetOutlook,
-  SeedUpsetRateLookup,
-  SeedUpsetRateSource,
   TournamentUpsetOutlook,
   UpsetOutlookOptions,
 } from "./seedUpsets.js";
+export type {
+  BracketRound,
+  SeedUpsetRateLookup,
+  SeedUpsetRateSource,
+} from "./historicalRates.js";

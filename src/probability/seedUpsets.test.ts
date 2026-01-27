@@ -4,8 +4,8 @@ import {
   analyzeRoundOneUpsetOutlook,
   blendUpsetProbabilities,
   forecastMatchupUpset,
-  lookupHistoricalSeedUpsetRate,
 } from "./seedUpsets.js";
+import { lookupHistoricalSeedUpsetRate } from "./historicalRates.js";
 
 describe("lookupHistoricalSeedUpsetRate", () => {
   it("returns canonical first-round rates for standard NCAA pairings", () => {
@@ -13,6 +13,7 @@ describe("lookupHistoricalSeedUpsetRate", () => {
       favoriteSeed: 1,
       underdogSeed: 16,
       seedGap: 15,
+      round: 0,
       historicalRate: 0.01,
       source: "canonical-first-round",
     });
@@ -20,6 +21,7 @@ describe("lookupHistoricalSeedUpsetRate", () => {
       favoriteSeed: 5,
       underdogSeed: 12,
       seedGap: 7,
+      round: 0,
       historicalRate: 0.35,
       source: "canonical-first-round",
     });

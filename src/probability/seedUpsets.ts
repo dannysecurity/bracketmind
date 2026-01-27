@@ -1,42 +1,15 @@
 import { buildSeedMap } from "./seeds.js";
+import {
+  lookupHistoricalUpsetRate,
+  lookupHistoricalSeedUpsetRate,
+  type SeedUpsetRateLookup,
+  type SeedUpsetRateSource,
+} from "./historicalRates.js";
 import { matchupUpsetProbability } from "./matchup.js";
 import type { Bracket, Team } from "../types.js";
 
-/** Historical first-round upset rates (underdog wins), aggregated from NCAA tournaments 1985–2024. */
-const CANONICAL_FIRST_ROUND_RATES: Readonly<Record<string, number>> = {
-  "1-16": 0.01,
-  "2-15": 0.06,
-  "3-14": 0.15,
-  "4-13": 0.21,
-  "5-12": 0.35,
-  "6-11": 0.37,
-  "7-10": 0.4,
-  "8-9": 0.48,
-};
-
-/** Fallback upset rates by seed gap when the pairing is not a canonical first-round slot. */
-const SEED_GAP_UPSET_RATES: Readonly<Record<number, number>> = {
-  0: 0.5,
-  1: 0.48,
-  2: 0.35,
-  3: 0.25,
-  4: 0.18,
-  5: 0.1,
-  6: 0.06,
-  7: 0.03,
-  8: 0.01,
-};
-
-export type SeedUpsetRateSource = "canonical-first-round" | "seed-gap-model";
-
-export interface SeedUpsetRateLookup {
-  favoriteSeed: number;
-  underdogSeed: number;
-  seedGap: number;
-  /** Probability the higher seed number (underdog) wins. */
-  historicalRate: number;
-  source: SeedUpsetRateSource;
-}
+export type { SeedUpsetRateLookup, SeedUpsetRateSource };
+export { lookupHistoricalSeedUpsetRate, lookupHistoricalUpsetRate };
 
 export interface RoundOneUpsetOutlook {
   slot: number;
@@ -76,50 +49,6 @@ export interface MatchupUpsetForecast {
 /** Default blend weight for historical NCAA seed upset rates vs Elo forecasts. */
 export const DEFAULT_HISTORICAL_WEIGHT = 0.35;
 
-function canonicalPairKey(favoriteSeed: number, underdogSeed: number): string {
-  return `${favoriteSeed}-${underdogSeed}`;
-}
-
-function rateForSeedGap(seedGap: number): number {
-  if (seedGap <= 0) {
-    return SEED_GAP_UPSET_RATES[0];
-  }
-  if (seedGap >= 8) {
-    return SEED_GAP_UPSET_RATES[8];
-  }
-  return SEED_GAP_UPSET_RATES[seedGap] ?? SEED_GAP_UPSET_RATES[8];
-}
-
-/** Look up the historical upset rate for a seed pairing (lower seed number is the favorite). */
-export function lookupHistoricalSeedUpsetRate(
-  seedA: number,
-  seedB: number
-): SeedUpsetRateLookup {
-  const favoriteSeed = Math.min(seedA, seedB);
-  const underdogSeed = Math.max(seedA, seedB);
-  const seedGap = underdogSeed - favoriteSeed;
-  const canonicalKey = canonicalPairKey(favoriteSeed, underdogSeed);
-  const canonicalRate = CANONICAL_FIRST_ROUND_RATES[canonicalKey];
-
-  if (canonicalRate !== undefined) {
-    return {
-      favoriteSeed,
-      underdogSeed,
-      seedGap,
-      historicalRate: canonicalRate,
-      source: "canonical-first-round",
-    };
-  }
-
-  return {
-    favoriteSeed,
-    underdogSeed,
-    seedGap,
-    historicalRate: rateForSeedGap(seedGap),
-    source: "seed-gap-model",
-  };
-}
-
 /** Blend Elo and historical seed upset probabilities into a single forecast. */
 export function blendUpsetProbabilities(
   eloProbability: number,
@@ -130,13 +59,14 @@ export function blendUpsetProbabilities(
   return eloProbability * (1 - weight) + historicalProbability * weight;
 }
 
-/** Forecast upset probability for a pairing, blending Elo with historical seed rates when possible. */
+/** Forecast upset probability for a pairing, blending Elo with round-aware historical seed rates. */
 export function forecastMatchupUpset(
   teamA: Team,
   teamB: Team,
   seedA: number | null,
   seedB: number | null,
-  historicalWeight = DEFAULT_HISTORICAL_WEIGHT
+  historicalWeight = DEFAULT_HISTORICAL_WEIGHT,
+  round = 0
 ): MatchupUpsetForecast {
   const eloUpsetProbability = matchupUpsetProbability(teamA, teamB);
   if (eloUpsetProbability === null || seedA === null || seedB === null) {
@@ -148,7 +78,7 @@ export function forecastMatchupUpset(
     };
   }
 
-  const lookup = lookupHistoricalSeedUpsetRate(seedA, seedB);
+  const lookup = lookupHistoricalUpsetRate(seedA, seedB, round);
   return {
     eloUpsetProbability,
     historicalUpsetProbability: lookup.historicalRate,
@@ -192,9 +122,10 @@ function buildRoundOneOutlook(
     teamB,
     seedA,
     seedB,
-    historicalWeight
+    historicalWeight,
+    0
   );
-  const lookup = lookupHistoricalSeedUpsetRate(seedA, seedB);
+  const lookup = lookupHistoricalUpsetRate(seedA, seedB, 0);
 
   return {
     slot,

@@ -41,8 +41,20 @@ function formatMatchupLine(matchup: RoundOneMatchup): string {
 }
 
 function formatOutlookLine(matchup: RoundOneUpsetOutlook): string {
-  if (matchup.isByeMatch || matchup.blendedUpsetProbability === null) {
-    return formatMatchupLine(matchup);
+  if (matchup.isByeMatch) {
+    const advancing =
+      matchup.teamA.name === "BYE" ? matchup.teamB : matchup.teamA;
+    const seed = matchup.teamA.name === "BYE" ? matchup.seedB : matchup.seedA;
+    return `  ${formatSeedLabel(seed, advancing.name)} advances (BYE)`;
+  }
+
+  if (matchup.blendedUpsetProbability === null) {
+    return formatMatchupLine({
+      ...matchup,
+      upsetProbability: null,
+      eloUpsetProbability: null,
+      historicalUpsetProbability: null,
+    });
   }
 
   const labelA = formatSeedLabel(matchup.seedA, matchup.teamA.name);

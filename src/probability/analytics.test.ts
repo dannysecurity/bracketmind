@@ -5,7 +5,6 @@ import {
   parseTeams,
   simulateBracket,
 } from "../bracket.js";
-import { createBracket, parseTeams } from "../bracket.js";
 import { monteCarloChampionshipRates } from "../simulator.js";
 import {
   analyzeUpsetLandscape,
@@ -141,5 +140,21 @@ describe("analyzeUpsetLandscape", () => {
 
     expect(candidate.upsetProbability).toBe(candidate.eloUpsetProbability);
     expect(candidate.historicalUpsetProbability).not.toBeNull();
+  });
+
+  it("uses round-aware historical rates for later-round expected pairings", () => {
+    const teams = parseTeams(
+      Array.from({ length: 16 }, (_, index) => `S${index + 1}:${2000 - index * 10}`)
+    );
+    const landscape = analyzeUpsetLandscape(teams);
+    const sweetSixteen = landscape.roundSummaries[2];
+    const oneFour = sweetSixteen.candidates.find(
+      (candidate) => candidate.seedA === 1 && candidate.seedB === 4
+    );
+
+    expect(oneFour).toBeTruthy();
+    expect(oneFour!.historicalRateSource).toBe("canonical-round");
+    expect(oneFour!.historicalUpsetProbability).toBe(0.22);
+    expect(oneFour!.upsetProbability).not.toBe(oneFour!.eloUpsetProbability);
   });
 });

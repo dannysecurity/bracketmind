@@ -73,7 +73,8 @@ function buildUpsetCandidate(
     teamB,
     seedA,
     seedB,
-    historicalWeight
+    historicalWeight,
+    round
   );
   if (forecast.upsetProbability === null) {
     return null;

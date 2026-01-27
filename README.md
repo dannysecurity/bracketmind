@@ -9,7 +9,7 @@ Tournament bracket simulator with Elo-based team ratings, probabilistic game sim
 - **Game simulation** — score generation driven by rating differential; head-to-head Monte Carlo forecasts via `game --trials`
 - **Monte Carlo predictions** — estimate championship odds across thousands of simulated tournaments
 - **Analytical upset analysis** — path-weighted upset probabilities for every bracket round
-- **Historical seed upset model** — blends Elo forecasts with NCAA seed matchup upset rates in `seedings`
+- **Historical seed upset model** — blends Elo forecasts with round-aware NCAA seed matchup upset rates in `seedings` and `upsets`
 - **CLI** — simulate a bracket or forecast outcomes from the terminal
 - **Display formats** — round-labeled list view, ASCII tree layout, and predict bar charts
 - **Web viewer** — lightweight browser UI via `serve`
@@ -53,7 +53,7 @@ src/
   eloUpdates.ts    Margin-, round-, and upset-aware tournament Elo updates
   simulator.ts     Single-game simulation and Monte Carlo helpers
   bracket.ts       Bracket construction and simulation
-  probability/     Shared seed/upset helpers, historical seed rates, and analytical bracket paths
+  probability/     Round-aware historical upset rates, seed helpers, and analytical bracket paths
   seeding.ts       Round-one seeding and upset summaries
   display/         Shared bracket view model and CLI/HTML renderers
   cli.ts           Command-line interface
