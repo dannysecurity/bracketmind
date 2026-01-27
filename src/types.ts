@@ -1,8 +1,18 @@
 import type { TeamRating } from "./ratings.js";
 import type { Team } from "./models/index.js";
 
-export type { Bracket, Match, Team } from "./models/index.js";
-export { isByeTeam } from "./models/index.js";
+export type {
+  Bracket,
+  GameResult,
+  Match,
+  RecordedGame,
+  Team,
+} from "./models/index.js";
+export {
+  isByeTeam,
+  isCompletedMatch,
+  recordedGamesFromBracket,
+} from "./models/index.js";
 
 /** Per-team rating tracking for games played within a single tournament run. */
 export interface TournamentState {

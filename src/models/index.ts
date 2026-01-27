@@ -8,6 +8,16 @@ export {
   bracketSlotOf,
   sameBracketSlot,
 } from "./game.js";
+export type { CompletedGameScores } from "./bracketGame.js";
+export {
+  applyGameResultToMatch,
+  gameResultFromMatch,
+  gameResultFromRecordedGame,
+  isCompletedMatch,
+  recordedGameFromMatch,
+  recordedGamesFromBracket,
+  resolveWinner,
+} from "./bracketGame.js";
 export type {
   GameOutcomeFacts,
   ResolvedGameParticipants,

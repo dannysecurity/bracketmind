@@ -16,6 +16,7 @@ export {
   gameResultFromMatch,
   gameResultFromRecordedGame,
   recordedGameFromMatch,
+  recordedGamesFromBracket,
   resolveWinner,
 } from "./gameResults.js";
 export {
