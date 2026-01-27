@@ -42,6 +42,17 @@ describe("renderHtml", () => {
     expect(html).toContain('class="team loser"');
   });
 
+  it("shows scores inline on the winning team row", () => {
+    const teams = seededTeams(["Alpha", "Beta", "Gamma", "Delta"]);
+    const html = renderBracketHtml(simulateBracket(createBracket(teams)));
+
+    expect(html).toContain('class="score-inline"');
+    expect(html).not.toContain('class="score"');
+    expect(html).toMatch(
+      /class="team winner">[\s\S]*?<span class="score-inline">\d+-\d+<\/span>/
+    );
+  });
+
   it("shows BYE field summary for odd-sized brackets", () => {
     const teams = seededTeams(["S1", "S2", "S3"]);
     const html = renderBracketHtml(simulateBracket(createBracket(teams)));

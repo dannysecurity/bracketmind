@@ -216,6 +216,12 @@ select:focus-visible {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.match:hover {
+  border-color: rgba(61, 214, 140, 0.35);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .match.bye-match {
@@ -224,6 +230,10 @@ select:focus-visible {
 }
 
 .team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.35rem 0.5rem;
   border-radius: 6px;
 }
@@ -258,9 +268,16 @@ select:focus-visible {
   font-style: italic;
 }
 
-.score {
+.score-inline {
   font-size: 0.85rem;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.team.winner .score-inline {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .upset-chance {

@@ -69,6 +69,32 @@ function renderTeamLabelHtml(
   return escapeHtml(team.name);
 }
 
+function renderInlineScoreHtml(match: MatchView, team: TeamView): string {
+  if (
+    !match.winner ||
+    match.winner.name !== team.name ||
+    match.scoreA === undefined ||
+    match.scoreB === undefined
+  ) {
+    return "";
+  }
+
+  const teamScore = team.name === match.teamA?.name ? match.scoreA : match.scoreB;
+  const opponentScore = team.name === match.teamA?.name ? match.scoreB : match.scoreA;
+  return `<span class="score-inline">${teamScore}-${opponentScore}</span>`;
+}
+
+function renderTeamCellHtml(
+  team: TeamView | null,
+  match: MatchView,
+  showSeeds: boolean
+): string {
+  const className = teamCellClass(team, match);
+  const label = renderTeamLabelHtml(team, showSeeds);
+  const score = team ? renderInlineScoreHtml(match, team) : "";
+  return `<div class="${className}">${label}${score}</div>`;
+}
+
 function renderUpsetChanceHtml(probability: number | null): string {
   if (probability === null) {
     return "";
@@ -77,23 +103,18 @@ function renderUpsetChanceHtml(probability: number | null): string {
 }
 
 function renderMatchCard(match: MatchView, showSeeds: boolean): string {
-  const score =
-    match.scoreA !== undefined && match.scoreB !== undefined
-      ? `<span class="score">${match.scoreA}-${match.scoreB}</span>`
-      : "";
   const upsetChance = !match.winner ? renderUpsetChanceHtml(match.upsetChance) : "";
 
   if (match.isByeMatch && match.winner) {
     return `<article class="match bye-match">
-      <div class="${teamCellClass(match.winner, match)}">${renderTeamLabelHtml(match.winner, showSeeds)}</div>
+      ${renderTeamCellHtml(match.winner, match, showSeeds)}
       <div class="bye-note">advances (BYE)</div>
     </article>`;
   }
 
   return `<article class="match">
-    <div class="${teamCellClass(match.teamA, match)}">${renderTeamLabelHtml(match.teamA, showSeeds)}</div>
-    <div class="${teamCellClass(match.teamB, match)}">${renderTeamLabelHtml(match.teamB, showSeeds)}</div>
-    ${score}
+    ${renderTeamCellHtml(match.teamA, match, showSeeds)}
+    ${renderTeamCellHtml(match.teamB, match, showSeeds)}
     ${upsetChance}
   </article>`;
 }
