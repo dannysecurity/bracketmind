@@ -5,6 +5,12 @@ import type { BracketOrdering } from "./types.js";
 /** Convert a season fixture team entry into the runtime team model. */
 export { toRuntimeTeam as seasonTeamToTeam } from "../models/team.js";
 
+/** Use official seed placement when any real team carries a seed; otherwise rating. */
+export function bracketOrderingForTeams(teams: Team[]): BracketOrdering {
+  const realTeams = teams.filter((team) => !isByeTeam(team));
+  return realTeams.some((team) => team.seed !== undefined) ? "seed" : "rating";
+}
+
 /** Sort teams for bracket seeding using the chosen ordering strategy. */
 export function orderTeamsForBracket(
   teams: Team[],

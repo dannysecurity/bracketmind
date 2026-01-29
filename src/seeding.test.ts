@@ -54,6 +54,23 @@ describe("seeding", () => {
     expect(byeMatch!.upsetProbability).toBeNull();
   });
 
+  it("places round-one matchups by official seed when teams carry seeds", () => {
+    const teams = parseTeams(["One", "Two", "Three", "Four"]).map((team, i) => ({
+      ...team,
+      seed: [1, 2, 3, 4][i],
+      rating: [1600, 1700, 1650, 1500][i],
+    }));
+    const { roundOneMatchups } = analyzeSeeding(teams);
+
+    expect(roundOneMatchups[0].teamA.name).toBe("One");
+    expect(roundOneMatchups[0].teamB.name).toBe("Four");
+    expect(roundOneMatchups[0].seedA).toBe(1);
+    expect(roundOneMatchups[0].seedB).toBe(4);
+    expect(roundOneMatchups[0].historicalUpsetProbability).toBe(0.25);
+    expect(roundOneMatchups[1].teamA.name).toBe("Two");
+    expect(roundOneMatchups[1].teamB.name).toBe("Three");
+  });
+
   it("picks the closest matchup as the most likely upset", () => {
     const teams = parseTeams(["S1", "S2", "S3", "S4"]).map((team, i) => ({
       ...team,

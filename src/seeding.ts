@@ -1,4 +1,5 @@
-import { createBracket } from "./bracket.js";
+import { buildBracket } from "./domain/buildBracket.js";
+import { bracketOrderingForTeams } from "./domain/teams.js";
 import { buildSeedMap, buildSeededTeams } from "./probability/seeds.js";
 import type { SeededTeam } from "./probability/seeds.js";
 import {
@@ -90,7 +91,9 @@ export function analyzeSeeding(
   roundOneMatchups: RoundOneMatchup[];
   upsetOutlook: TournamentUpsetOutlook;
 } {
-  const bracket = createBracket(teams);
+  const bracket = buildBracket(teams, {
+    ordering: bracketOrderingForTeams(teams),
+  });
   return {
     seededTeams: buildSeededTeams(teams),
     roundOneMatchups: getRoundOneMatchups(bracket, options),

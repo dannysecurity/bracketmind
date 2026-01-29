@@ -20,6 +20,7 @@ export {
   resolveWinner,
 } from "./gameResults.js";
 export {
+  bracketOrderingForTeams,
   orderTeamsForBracket,
   seasonTeamToTeam,
 } from "./teams.js";

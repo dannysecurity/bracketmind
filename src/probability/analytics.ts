@@ -1,4 +1,5 @@
-import { createBracket } from "../bracket.js";
+import { buildBracket } from "../domain/buildBracket.js";
+import { bracketOrderingForTeams } from "../domain/teams.js";
 import { matchIndex } from "../bracket/layout.js";
 import { roundLabel } from "../display/roundLabels.js";
 import type { Bracket, Team } from "../types.js";
@@ -224,7 +225,9 @@ export function analyzeUpsetLandscape(
 ): UpsetLandscape {
   const historicalWeight =
     options.historicalWeight ?? DEFAULT_HISTORICAL_WEIGHT;
-  const bracket = createBracket(teams);
+  const bracket = buildBracket(teams, {
+    ordering: bracketOrderingForTeams(teams),
+  });
   const seeds = buildSeedMap(bracket.teams);
   const roundSummaries: RoundUpsetSummary[] = [];
 
