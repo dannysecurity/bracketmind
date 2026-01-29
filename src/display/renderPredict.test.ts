@@ -14,10 +14,22 @@ describe("renderPredictBars", () => {
 
     const lines = renderPredictBars(rates, teams, { enabled: false });
     expect(lines).toHaveLength(3);
-    expect(lines[0]).toContain("Alpha");
+    expect(lines[0]).toContain("#1 Alpha");
     expect(lines[0]).toContain("50.0%");
-    expect(lines[1]).toContain("Beta");
-    expect(lines[2]).toContain("Gamma");
+    expect(lines[1]).toContain("#2 Beta");
+    expect(lines[2]).toContain("#3 Gamma");
+  });
+
+  it("can hide seeds in bar labels", () => {
+    const teams = parseTeams(["Alpha", "Beta"]);
+    const rates = new Map([
+      [teams[0].id, 0.6],
+      [teams[1].id, 0.4],
+    ]);
+
+    const lines = renderPredictBars(rates, teams, { enabled: false, showSeeds: false });
+    expect(lines[0]).toContain("Alpha");
+    expect(lines[0]).not.toContain("#1");
   });
 
   it("renders a titled section", () => {

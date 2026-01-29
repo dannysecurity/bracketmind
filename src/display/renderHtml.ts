@@ -21,12 +21,14 @@ export interface HtmlRenderOptions {
 
 export interface PredictHtmlOptions {
   iterations?: number;
+  showSeeds?: boolean;
 }
 
 export interface ViewerOptions {
   mode?: "simulate" | "predict" | "both";
   format?: BracketHtmlFormat;
   iterations?: number;
+  seed?: number;
 }
 
 function escapeHtml(value: string): string {
@@ -217,11 +219,19 @@ export function renderBracketHtml(
   return `<h2 class="section-heading">Simulated bracket</h2><div class="${gridClass}">${columns}</div>${fieldSummary}${champion}`;
 }
 
+function renderPredictNameHtml(entry: PredictEntry, showSeeds: boolean): string {
+  if (showSeeds) {
+    return `<span class="seed">#${entry.seed}</span> ${escapeHtml(entry.team.name)}`;
+  }
+  return escapeHtml(entry.team.name);
+}
+
 /** Render predict probabilities as HTML bars. */
 export function renderPredictHtml(
   entries: PredictEntry[],
   options: PredictHtmlOptions = {}
 ): string {
+  const showSeeds = options.showSeeds ?? true;
   const iterationLabel =
     options.iterations !== undefined
       ? ` (${options.iterations.toLocaleString()} simulations)`
@@ -231,7 +241,7 @@ export function renderPredictHtml(
     ${entries
       .map(
         (entry) => `<div class="predict-row">
-          <span class="predict-name">${escapeHtml(entry.team.name)}</span>
+          <span class="predict-name">${renderPredictNameHtml(entry, showSeeds)}</span>
           <span class="predict-bar"><span style="width:${Math.round(entry.rate * 100)}%"></span></span>
           <span class="predict-pct">${(entry.rate * 100).toFixed(1)}%</span>
         </div>`
@@ -244,6 +254,10 @@ function renderViewerForm(teams: string[], options: ViewerOptions = {}): string 
   const teamValue = escapeHtml(teams.join(", "));
   const format = options.format ?? "aligned";
   const iterations = options.iterations ?? 1000;
+  const seedValue =
+    options.seed !== undefined && !Number.isNaN(options.seed)
+      ? String(options.seed)
+      : "";
 
   const cardsSelected = format === "cards" ? " selected" : "";
   const alignedSelected = format === "aligned" ? " selected" : "";
@@ -263,6 +277,11 @@ function renderViewerForm(teams: string[], options: ViewerOptions = {}): string 
         <div class="form-field">
           <label for="iterations">Predict simulations</label>
           <input id="iterations" name="iterations" type="number" min="100" max="100000" step="100" value="${iterations}" />
+        </div>
+        <div class="form-field">
+          <label for="seed">Simulation seed</label>
+          <input id="seed" name="seed" type="number" min="0" step="1" value="${escapeHtml(seedValue)}" placeholder="Random" />
+          <p class="field-hint">Optional. Same seed replays identical bracket outcomes.</p>
         </div>
       </div>
       <div class="actions">

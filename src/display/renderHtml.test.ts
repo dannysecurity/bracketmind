@@ -86,6 +86,7 @@ describe("renderHtml", () => {
     const html = renderPredictHtml(entries, { iterations: 1000 });
     expect(html).toContain('<h2 class="section-heading">Championship probabilities (1,000 simulations)</h2>');
     expect(html).toContain('class="predict-row"');
+    expect(html).toContain('<span class="seed">#1</span> Alpha');
     expect(html).toContain("62.0%");
     expect(html).toContain('style="width:62%"');
   });
@@ -116,12 +117,16 @@ describe("renderHtml", () => {
       format: "aligned",
       iterations: 2500,
       mode: "both",
+      seed: 42,
     });
 
     expect(page).toContain('name="format"');
     expect(page).toContain('value="aligned" selected');
     expect(page).toContain('name="iterations"');
     expect(page).toContain('value="2500"');
+    expect(page).toContain('name="seed"');
+    expect(page).toContain('value="42"');
+    expect(page).toContain("Same seed replays identical bracket outcomes");
     expect(page).toContain('value="both"');
     expect(page).toContain("Name:rating");
   });

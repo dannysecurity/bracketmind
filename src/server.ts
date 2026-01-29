@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBracket, getChampion, parseTeams, simulateBracket } from "./bracket.js";
+import { createSeededRng } from "./simulator.js";
 import {
   renderCombinedPage,
   renderPredictPage,
@@ -38,8 +39,17 @@ function parseViewerOptions(url: URL): ViewerOptions {
   const modeParam = url.searchParams.get("mode");
   const mode =
     modeParam === "predict" || modeParam === "both" ? modeParam : "simulate";
+  const seedParam = url.searchParams.get("seed");
+  const seedRaw = seedParam !== null && seedParam.trim() !== "" ? parseInt(seedParam, 10) : undefined;
+  const seed =
+    seedRaw !== undefined && !Number.isNaN(seedRaw) && seedRaw >= 0 ? seedRaw : undefined;
 
-  return { mode, format, iterations };
+  return { mode, format, iterations, seed };
+}
+
+function simulateBracketForViewer(teams: ReturnType<typeof parseTeams>, seed?: number) {
+  const rng = seed !== undefined ? createSeededRng(seed) : undefined;
+  return simulateBracket(createBracket(teams), rng ? { rng } : undefined);
 }
 
 function sendHtml(res: ServerResponse, body: string): void {
@@ -79,19 +89,19 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
     const rates = monteCarloChampionshipRates(
       teams,
       options.iterations ?? 1000,
-      (field) => getChampion(simulateBracket(createBracket(field)))
+      (field) => getChampion(simulateBracketForViewer(field))
     );
     sendHtml(res, renderPredictPage(rates, teams, names, options));
     return;
   }
 
-  const result = simulateBracket(createBracket(teams));
+  const result = simulateBracketForViewer(teams, options.seed);
 
   if (options.mode === "both") {
     const rates = monteCarloChampionshipRates(
       teams,
       options.iterations ?? 1000,
-      (field) => getChampion(simulateBracket(createBracket(field)))
+      (field) => getChampion(simulateBracketForViewer(field))
     );
     sendHtml(res, renderCombinedPage(result, rates, teams, names, options));
     return;
