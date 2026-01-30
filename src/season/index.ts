@@ -41,3 +41,11 @@ export {
   resolveSeasonFixturePath,
   type FixtureCatalogEntry,
 } from "./fixtureCatalog.js";
+export { serializeSeasonDocument } from "./serializeSeason.js";
+export {
+  defaultFixtureOutputPath,
+  importSeasonFromFile,
+  writeSeasonFixture,
+  type ImportSeasonFixtureOptions,
+  type WriteSeasonFixtureOptions,
+} from "./writeFixture.js";

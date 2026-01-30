@@ -1,0 +1,80 @@
+{
+  "id": "2023-west-mini",
+  "name": "2023 NCAA West Region (mini bracket)",
+  "year": 2023,
+  "teams": [
+    { "id": "kansas", "name": "Kansas", "seed": 1, "rating": 1705 },
+    { "id": "ucla", "name": "UCLA", "seed": 2, "rating": 1680 },
+    { "id": "gonzaga", "name": "Gonzaga", "seed": 3, "rating": 1675 },
+    { "id": "uconn", "name": "UConn", "seed": 4, "rating": 1665 },
+    { "id": "tcu", "name": "TCU", "seed": 5, "rating": 1635 },
+    { "id": "creighton", "name": "Creighton", "seed": 6, "rating": 1610 },
+    { "id": "northwestern", "name": "Northwestern", "seed": 7, "rating": 1555 },
+    { "id": "arkansas", "name": "Arkansas", "seed": 8, "rating": 1520 }
+  ],
+  "games": [
+    {
+      "round": 0,
+      "slot": 0,
+      "teamAId": "kansas",
+      "teamBId": "arkansas",
+      "scoreA": 72,
+      "scoreB": 56,
+      "winnerId": "kansas"
+    },
+    {
+      "round": 0,
+      "slot": 1,
+      "teamAId": "uconn",
+      "teamBId": "tcu",
+      "scoreA": 72,
+      "scoreB": 55,
+      "winnerId": "uconn"
+    },
+    {
+      "round": 0,
+      "slot": 2,
+      "teamAId": "gonzaga",
+      "teamBId": "creighton",
+      "scoreA": 74,
+      "scoreB": 65,
+      "winnerId": "gonzaga"
+    },
+    {
+      "round": 0,
+      "slot": 3,
+      "teamAId": "ucla",
+      "teamBId": "northwestern",
+      "scoreA": 68,
+      "scoreB": 63,
+      "winnerId": "ucla"
+    },
+    {
+      "round": 1,
+      "slot": 0,
+      "teamAId": "kansas",
+      "teamBId": "uconn",
+      "scoreA": 60,
+      "scoreB": 69,
+      "winnerId": "uconn"
+    },
+    {
+      "round": 1,
+      "slot": 1,
+      "teamAId": "gonzaga",
+      "teamBId": "ucla",
+      "scoreA": 79,
+      "scoreB": 76,
+      "winnerId": "gonzaga"
+    },
+    {
+      "round": 2,
+      "slot": 0,
+      "teamAId": "uconn",
+      "teamBId": "gonzaga",
+      "scoreA": 88,
+      "scoreB": 75,
+      "winnerId": "uconn"
+    }
+  ]
+}

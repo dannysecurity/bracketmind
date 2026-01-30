@@ -29,13 +29,17 @@ import {
   renderSeasonValidation,
   renderFixtureCatalog,
   renderSeasonInfo,
+  renderSeasonFixtureImport,
   renderSeasonUpsetAnalysis,
 } from "./display/renderSeason.js";
 import { renderSeedingsSection } from "./display/renderSeedings.js";
 import { renderUpsetsSection } from "./display/renderUpsets.js";
+import { parseSeasonFile } from "./season/parseSeason.js";
 import {
   analyzeSeasonUpsets,
   compareSeasonPredictions,
+  defaultFixtureOutputPath,
+  importSeasonFromFile,
   listBundledFixtures,
   loadSeasonBracket,
   loadSeasonFixture,
@@ -196,6 +200,36 @@ function parseImportArgs(args: string[]): {
     path: filtered[2],
     format,
     iterations: Number.isNaN(iterations) ? 1000 : iterations,
+    color: { enabled: !noColor && supportsColor() },
+  };
+}
+
+function parseImportAddArgs(args: string[]): {
+  path?: string;
+  outDir?: string;
+  dryRun: boolean;
+  force: boolean;
+  color: ColorOptions;
+} {
+  const outFlag = args.indexOf("--out");
+  const outDir = outFlag >= 0 ? args[outFlag + 1] : undefined;
+  const dryRun = args.includes("--dry-run");
+  const force = args.includes("--force");
+  const noColor = args.includes("--no-color");
+  const filtered = args.filter(
+    (value, index) =>
+      value !== "--out" &&
+      (outFlag < 0 || index !== outFlag + 1) &&
+      value !== "--dry-run" &&
+      value !== "--force" &&
+      value !== "--no-color"
+  );
+
+  return {
+    path: filtered[2],
+    outDir,
+    dryRun,
+    force,
     color: { enabled: !noColor && supportsColor() },
   };
 }
@@ -403,9 +437,55 @@ export function runCli(args: string[]): void {
         break;
       }
 
+      if (subcommand === "add") {
+        const addArgs = parseImportAddArgs(args);
+        if (!addArgs.path) {
+          console.error(
+            "Usage: bracketmind import add <path.json> [--out <dir>] [--dry-run] [--force] [--no-color]"
+          );
+          process.exit(1);
+        }
+
+        let doc;
+        try {
+          doc = parseSeasonFile(addArgs.path);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.error(`Failed to import season fixture: ${message}`);
+          process.exit(1);
+        }
+
+        const summary = summarizeSeason(doc);
+        const outputPath = defaultFixtureOutputPath(doc, addArgs.outDir);
+
+        if (!addArgs.dryRun) {
+          try {
+            importSeasonFromFile(addArgs.path, {
+              outputDir: addArgs.outDir,
+              overwrite: addArgs.force,
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error(`Failed to write season fixture: ${message}`);
+            process.exit(1);
+          }
+        }
+
+        for (const line of renderSeasonFixtureImport(
+          doc,
+          summary,
+          outputPath,
+          { dryRun: addArgs.dryRun },
+          addArgs.color
+        )) {
+          console.log(line);
+        }
+        break;
+      }
+
       if (!path) {
         console.error(
-          "Usage: bracketmind import <season|info|ratings|compare|validate|upsets|list> <path.json|@fixture-id> [--format list|tree] [--iterations N] [--no-color]"
+          "Usage: bracketmind import <season|info|ratings|compare|validate|upsets|add|list> <path.json|@fixture-id> [--format list|tree] [--iterations N] [--no-color]"
         );
         process.exit(1);
       }
@@ -492,7 +572,7 @@ export function runCli(args: string[]): void {
 
         default:
           console.error(
-            "Usage: bracketmind import <season|info|ratings|compare|validate|upsets|list> <path.json|@fixture-id> [--format list|tree] [--iterations N] [--no-color]"
+            "Usage: bracketmind import <season|info|ratings|compare|validate|upsets|add|list> <path.json|@fixture-id> [--format list|tree] [--iterations N] [--no-color]"
           );
           process.exit(1);
       }
@@ -526,6 +606,8 @@ Commands:
                                    Validate a season fixture and summarize completeness
   import upsets <path.json|@fixture-id> [--no-color]
                                    Analyze upset probabilities for each recorded game
+  import add <path.json> [--out <dir>] [--dry-run] [--force] [--no-color]
+                                   Validate and persist an external season JSON fixture
   import list [--no-color]
                                    List bundled historical season fixtures
   serve [--port N]                 Launch the web bracket viewer (default 3000)
@@ -546,6 +628,7 @@ Examples:
   bracketmind import compare fixtures/seasons/2023-midwest-final-four.json --iterations 500
   bracketmind import validate fixtures/seasons/2024-west-mini.json
   bracketmind import upsets @2024-south-region
+  bracketmind import add ./my-season.json --dry-run
   bracketmind import list
   bracketmind serve --port 3000
 `);

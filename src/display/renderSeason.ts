@@ -143,6 +143,48 @@ export function renderSeasonInfo(
   return lines;
 }
 
+export function renderSeasonFixtureImport(
+  doc: SeasonDocument,
+  summary: SeasonSummary,
+  outputPath: string,
+  options: { dryRun: boolean },
+  color: ColorOptions = { enabled: false }
+): string[] {
+  const action = options.dryRun ? "Would write" : "Wrote";
+  const status = summary.isComplete
+    ? "Complete"
+    : `Partial (${summary.recordedGames}/${summary.expectedGames} games recorded)`;
+
+  const lines = [
+    heading("Historical Season Fixture Import", color),
+    `${doc.id} — ${doc.name} (${doc.year})`,
+    "",
+    `Status: ${status}`,
+    `Teams: ${summary.teamCount} · Games: ${summary.recordedGames}/${summary.expectedGames}`,
+  ];
+
+  if (summary.championName) {
+    lines.push(`Champion: ${summary.championName}`);
+  }
+
+  lines.push("");
+  lines.push(`${action} fixture to ${outputPath}`);
+
+  if (options.dryRun) {
+    lines.push("");
+    lines.push(
+      dim("Re-run without --dry-run to write the fixture to disk.", color)
+    );
+  } else {
+    lines.push("");
+    lines.push(
+      dim(`View imported bracket: bracketmind import season @${doc.id}`, color)
+    );
+  }
+
+  return lines;
+}
+
 export function renderSeasonUpsetAnalysis(
   analyses: SeasonGameUpsetAnalysis[],
   totalRounds: number,

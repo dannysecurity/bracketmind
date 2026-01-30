@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { runCli } from "./cli.js";
 
 function captureOutput(fn: () => void): { stdout: string; stderr: string; exitCode: number | null } {
@@ -298,6 +301,7 @@ describe("runCli", () => {
     expect(stdout).toContain("2024-south-region");
     expect(stdout).toContain("2024-east-mini");
     expect(stdout).toContain("2023-east-mini");
+    expect(stdout).toContain("2023-west-mini");
     expect(stdout).toContain("★ UConn");
   });
 
@@ -340,5 +344,46 @@ describe("runCli", () => {
 
     expect(exitCode).toBe(1);
     expect(stderr).toContain("Usage:");
+  });
+
+  it("dry-runs importing an external season fixture", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "import",
+        "add",
+        "fixtures/seasons/2023-west-mini.json",
+        "--dry-run",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Historical Season Fixture Import");
+    expect(stdout).toContain("2023-west-mini");
+    expect(stdout).toContain("Would write fixture to");
+    expect(stdout).toContain("Re-run without --dry-run");
+  });
+
+  it("writes an imported season fixture to a custom directory", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "bracketmind-import-"));
+    try {
+      const { stdout } = captureOutput(() => {
+        runCli([
+          "import",
+          "add",
+          "fixtures/seasons/2023-west-mini.json",
+          "--out",
+          tempDir,
+          "--force",
+          "--no-color",
+        ]);
+      });
+
+      const outputPath = join(tempDir, "2023-west-mini.json");
+      expect(stdout).toContain("Wrote fixture to");
+      expect(stdout).toContain(outputPath);
+      expect(existsSync(outputPath)).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

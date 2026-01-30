@@ -16,9 +16,10 @@ describe("fixtureCatalog", () => {
   it("lists every bundled season fixture with metadata", () => {
     const entries = listBundledFixtures();
 
-    expect(entries.length).toBeGreaterThanOrEqual(6);
+    expect(entries.length).toBeGreaterThanOrEqual(7);
     expect(entries.map((entry) => entry.id)).toContain("2024-south-region");
     expect(entries.map((entry) => entry.id)).toContain("2023-east-mini");
+    expect(entries.map((entry) => entry.id)).toContain("2023-west-mini");
     expect(entries.every((entry) => entry.path.startsWith(bundledFixturesDir()))).toBe(
       true
     );
