@@ -1106,6 +1106,31 @@ describe("monteCarloGameOutcomes edge cases", () => {
       result.marginPercentiles.p90
     );
   });
+
+  it("consumes three RNG draws for each iteration", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const iterations = 12;
+    const { rng, callCount } = countingRng(createSeededRng(24601));
+
+    monteCarloGameOutcomes(teamA, teamB, iterations, { rng });
+
+    expect(callCount()).toBe(iterations * 3);
+  });
+
+  it("reports zero margin spread when every trial uses the same score rolls", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const sharedRolls = [0.25, 0.5, 0.5];
+
+    const result = monteCarloGameOutcomes(teamA, teamB, 6, {
+      rng: sequenceRng(sharedRolls),
+    });
+
+    expect(result.marginStdDev).toBe(0);
+    expect(result.avgMargin).toBe(result.sampleResult.margin);
+    expect(result.marginPercentiles.p10).toBe(result.marginPercentiles.p90);
+  });
 });
 
 describe("simulateBracket edge cases", () => {
@@ -1603,6 +1628,40 @@ describe("simulateBracket edge cases", () => {
       2
     );
   });
+
+  it("conserves total rating points when dynamicRatings is enabled", () => {
+    const teams = ratedField(8, 1700, 25);
+    const startingTotal = teams.reduce((sum, entry) => sum + entry.rating, 0);
+
+    const result = simulateBracket(createBracket(teams), {
+      dynamicRatings: true,
+      rng: createSeededRng(4242),
+    });
+
+    const endingTotal = result.teams
+      .filter((entry) => entry.name !== "BYE")
+      .reduce((sum, entry) => sum + entry.rating, 0);
+
+    expect(endingTotal).toBe(startingTotal);
+  });
+
+  it("conserves total rating points for padded fields with BYE auto-advances", () => {
+    const teams = parseTeams(["S1", "S2", "S3", "S4", "S5", "S6", "S7"]).map(
+      (entry, index) => ({ ...entry, rating: 1650 - index * 40 })
+    );
+    const startingTotal = teams.reduce((sum, entry) => sum + entry.rating, 0);
+
+    const result = simulateBracket(createBracket(teams), {
+      dynamicRatings: true,
+      rng: createSeededRng(777),
+    });
+
+    const endingTotal = result.teams
+      .filter((entry) => entry.name !== "BYE")
+      .reduce((sum, entry) => sum + entry.rating, 0);
+
+    expect(endingTotal).toBe(startingTotal);
+  });
 });
 
 describe("tournamentState edge cases", () => {
@@ -1625,6 +1684,23 @@ describe("tournamentState edge cases", () => {
 
     expect(state.ratings.has("alpha")).toBe(true);
     expect(state.ratings.has("bye-1")).toBe(false);
+  });
+
+  it("conserves total rating points on a tied recorded result", () => {
+    const teamA = team("TeamA", 1500);
+    const teamB = team("TeamB", 1520);
+    const state = createTournamentState([teamA, teamB]);
+    const startingTotal =
+      (state.ratings.get(teamA.id)?.rating ?? 0) +
+      (state.ratings.get(teamB.id)?.rating ?? 0);
+
+    recordGameResult(state, teamA, teamB, 70, 70, { margin: 0 });
+
+    const endingTotal =
+      (state.ratings.get(teamA.id)?.rating ?? 0) +
+      (state.ratings.get(teamB.id)?.rating ?? 0);
+
+    expect(endingTotal).toBe(startingTotal);
   });
 });
 
