@@ -1,4 +1,5 @@
 import type { TeamRating } from "./ratings.js";
+import type { RatingModel } from "./ratingsModel.js";
 import type { Team } from "./models/index.js";
 
 export type {
@@ -39,6 +40,8 @@ export interface SimulationOptions {
   round?: number;
   /** Total bracket rounds; used with `round` for contextual Elo updates. */
   totalRounds?: number;
+  /** Tunable Elo update parameters; defaults to production model. */
+  ratingModel?: RatingModel;
 }
 
 export interface BracketSimulationOptions {
@@ -46,6 +49,8 @@ export interface BracketSimulationOptions {
   rng?: () => number;
   /** Track and update team ratings as the bracket progresses. */
   dynamicRatings?: boolean;
+  /** Tunable Elo update parameters when dynamicRatings is enabled. */
+  ratingModel?: RatingModel;
 }
 
 /** Margin distribution percentiles from repeated head-to-head simulations. */

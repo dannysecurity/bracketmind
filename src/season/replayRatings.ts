@@ -6,6 +6,7 @@ import {
 } from "../probability/seedUpsets.js";
 import { GameCatalog } from "../models/gameCatalog.js";
 import { createTournamentState, recordGameResult } from "../tournamentState.js";
+import { defaultRatingModel, type RatingModel } from "../ratingsModel.js";
 import type { Team, TournamentState } from "../types.js";
 import { isByeTeam } from "../types.js";
 import { teamRegistryFromDocument } from "./adapters.js";
@@ -25,7 +26,10 @@ export interface SeasonRatingReplay {
 }
 
 /** Replay recorded season games through the Elo update pipeline. */
-export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
+export function replaySeasonRatings(
+  doc: SeasonDocument,
+  model: RatingModel = defaultRatingModel()
+): SeasonRatingReplay {
   const bracket = createBracketFromSeason(doc);
   const state = createTournamentState(bracket.teams.filter((team) => !isByeTeam(team)));
   const startRatings = new Map<string, number>();
@@ -59,7 +63,7 @@ export function replaySeasonRatings(doc: SeasonDocument): SeasonRatingReplay {
       totalRounds: bracket.rounds,
       margin: Math.abs(game.scoreA - game.scoreB),
       isUpset,
-    });
+    }, model);
 
     match.teamA = teamA;
     match.teamB = teamB;

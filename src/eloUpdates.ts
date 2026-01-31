@@ -1,11 +1,14 @@
 import {
-  DEFAULT_K_FACTOR,
   EVEN_MATCHUP_EXPECTED_MARGIN,
   expectedMarginFromRatings,
   expectedScore,
   kFactorForTeam,
   type TeamRating,
 } from "./ratings.js";
+import {
+  defaultRatingModel,
+  type RatingModel,
+} from "./ratingsModel.js";
 
 /** Context for scaling Elo updates by game situation and bracket stage. */
 export interface GameRatingContext {
@@ -19,9 +22,6 @@ export interface GameRatingContext {
   isUpset: boolean;
 }
 
-const DEFAULT_MOV_CAP = 20;
-const UPSET_BONUS = 0.08;
-
 /**
  * Map a win/loss plus margin to an Elo "actual" score in [0, 1].
  * Blowouts count as fully decisive; nail-biters give partial credit to the loser.
@@ -33,7 +33,7 @@ const UPSET_BONUS = 0.08;
 export function actualScoreFromGame(
   won: boolean,
   margin: number,
-  movCap = DEFAULT_MOV_CAP,
+  movCap = defaultRatingModel().movCap,
   winnerRating?: number,
   loserRating?: number
 ): number {
@@ -50,22 +50,32 @@ export function actualScoreFromGame(
 }
 
 /** Later bracket rounds carry more rating weight than early ones. */
-export function roundKMultiplier(round: number, totalRounds: number): number {
+export function roundKMultiplier(
+  round: number,
+  totalRounds: number,
+  model: RatingModel = defaultRatingModel()
+): number {
   if (totalRounds <= 1) {
     return 1;
   }
   const progress = round / (totalRounds - 1);
-  return 0.9 + 0.3 * progress;
+  return model.roundKMin + model.roundKRange * progress;
 }
 
 /** Combine provisional K with round-based scaling. */
 export function contextualKFactor(
   team: TeamRating,
   context: GameRatingContext,
-  baseK = DEFAULT_K_FACTOR
+  model: RatingModel = defaultRatingModel()
 ): number {
-  const provisional = kFactorForTeam(team.gamesPlayed, baseK);
-  return Math.round(provisional * roundKMultiplier(context.round, context.totalRounds));
+  const provisional = kFactorForTeam(
+    team.gamesPlayed,
+    model.baseKFactor,
+    model
+  );
+  return Math.round(
+    provisional * roundKMultiplier(context.round, context.totalRounds, model)
+  );
 }
 
 function applyUpsetBonus(
@@ -74,7 +84,8 @@ function applyUpsetBonus(
   ratingA: number,
   ratingB: number,
   winnerIsA: boolean,
-  isUpset: boolean
+  isUpset: boolean,
+  upsetBonus: number
 ): [number, number] {
   if (!isUpset || ratingA === ratingB) {
     return [actualA, actualB];
@@ -82,13 +93,13 @@ function applyUpsetBonus(
 
   if (winnerIsA) {
     return [
-      Math.min(1, actualA + UPSET_BONUS),
-      Math.max(0, actualB - UPSET_BONUS),
+      Math.min(1, actualA + upsetBonus),
+      Math.max(0, actualB - upsetBonus),
     ];
   }
   return [
-    Math.max(0, actualA - UPSET_BONUS),
-    Math.min(1, actualB + UPSET_BONUS),
+    Math.max(0, actualA - upsetBonus),
+    Math.min(1, actualB + upsetBonus),
   ];
 }
 
@@ -98,7 +109,8 @@ export function computeActualScores(
   scoreB: number,
   context: GameRatingContext,
   ratingA: number,
-  ratingB: number
+  ratingB: number,
+  model: RatingModel = defaultRatingModel()
 ): [number, number] {
   if (scoreA === scoreB) {
     return [0.5, 0.5];
@@ -110,14 +122,14 @@ export function computeActualScores(
   let actualA = actualScoreFromGame(
     winnerIsA,
     context.margin,
-    DEFAULT_MOV_CAP,
+    model.movCap,
     winnerRating,
     loserRating
   );
   let actualB = actualScoreFromGame(
     !winnerIsA,
     context.margin,
-    DEFAULT_MOV_CAP,
+    model.movCap,
     winnerRating,
     loserRating
   );
@@ -128,7 +140,8 @@ export function computeActualScores(
     ratingA,
     ratingB,
     winnerIsA,
-    context.isUpset
+    context.isUpset,
+    model.upsetBonus
   );
 }
 
@@ -155,16 +168,20 @@ export function updateTeamRatingsWithContext(
   teamB: TeamRating,
   scoreA: number,
   scoreB: number,
-  context: GameRatingContext
+  context: GameRatingContext,
+  model: RatingModel = defaultRatingModel()
 ): [TeamRating, TeamRating] {
   const k =
-    (contextualKFactor(teamA, context) + contextualKFactor(teamB, context)) / 2;
+    (contextualKFactor(teamA, context, model) +
+      contextualKFactor(teamB, context, model)) /
+    2;
   const [actualA, actualB] = computeActualScores(
     scoreA,
     scoreB,
     context,
     teamA.rating,
-    teamB.rating
+    teamB.rating,
+    model
   );
   const [newRatingA, newRatingB] = updateRatingsWithContext(
     teamA.rating,

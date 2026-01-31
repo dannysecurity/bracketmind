@@ -1,6 +1,11 @@
+import {
+  defaultRatingModel,
+  type RatingModel,
+} from "./ratingsModel.js";
+
 const DEFAULT_RATING = 1500;
 /** Base K used for standard and contextual Elo updates. */
-export const DEFAULT_K_FACTOR = 32;
+export const DEFAULT_K_FACTOR = defaultRatingModel().baseKFactor;
 const RATING_GAP_DIVISOR = 40;
 /** Baseline expected margin for evenly matched teams (1500 vs 1500). */
 export const EVEN_MATCHUP_EXPECTED_MARGIN = 5;
@@ -33,15 +38,16 @@ export function createTeamRating(rating = DEFAULT_RATING): TeamRating {
 /** Provisional teams get a higher K; established teams move more slowly. */
 export function kFactorForTeam(
   gamesPlayed: number,
-  baseK = DEFAULT_K_FACTOR
+  baseK = DEFAULT_K_FACTOR,
+  model: RatingModel = defaultRatingModel()
 ): number {
-  if (gamesPlayed < 10) {
-    return Math.round(baseK * 1.25);
+  if (gamesPlayed < model.provisionalThreshold) {
+    return Math.round(baseK * model.provisionalKMultiplier);
   }
-  if (gamesPlayed < 30) {
+  if (gamesPlayed < model.establishedThreshold) {
     return baseK;
   }
-  return Math.round(baseK * 0.8);
+  return Math.round(baseK * model.establishedKMultiplier);
 }
 
 /** Expected score for team A against team B (Elo formula). */

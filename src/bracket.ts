@@ -44,6 +44,7 @@ export function simulateBracket(
           tournamentState,
           round,
           totalRounds: working.rounds,
+          ratingModel: options.ratingModel,
         });
         match.winner = result.winner;
         match.scoreA = result.scoreA;

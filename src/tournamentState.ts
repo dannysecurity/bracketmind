@@ -3,6 +3,7 @@ import {
   type GameRatingContext,
 } from "./eloUpdates.js";
 import { createTeamRating, isRatingUpset, type TeamRating } from "./ratings.js";
+import { defaultRatingModel, type RatingModel } from "./ratingsModel.js";
 import type { Team, TournamentState } from "./types.js";
 
 /** Initialize tournament rating state from the bracket field. */
@@ -31,7 +32,8 @@ export function recordGameResult(
   teamB: Team,
   scoreA: number,
   scoreB: number,
-  context?: Partial<GameRatingContext>
+  context?: Partial<GameRatingContext>,
+  model: RatingModel = defaultRatingModel()
 ): { ratingDeltaA: number; ratingDeltaB: number } {
   const ratingA = state.ratings.get(teamA.id);
   const ratingB = state.ratings.get(teamB.id);
@@ -56,7 +58,8 @@ export function recordGameResult(
     ratingB,
     scoreA,
     scoreB,
-    fullContext
+    fullContext,
+    model
   );
   const ratingDeltaA = newA.rating - ratingA.rating;
   const ratingDeltaB = newB.rating - ratingB.rating;

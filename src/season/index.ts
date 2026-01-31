@@ -24,6 +24,12 @@ export {
   type SeasonRatingReplay,
 } from "./replayRatings.js";
 export {
+  calibrateRatingModel,
+  calibrateAllFixtures,
+  summarizeCalibration,
+  type RatingCalibrationResult,
+} from "./calibrateRatings.js";
+export {
   compareSeasonPredictions,
   type SeasonPredictionComparison,
 } from "./comparePredictions.js";

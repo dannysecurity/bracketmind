@@ -114,7 +114,8 @@ export function simulateGame(
         totalRounds: options.totalRounds,
         margin,
         isUpset,
-      }
+      },
+      options.ratingModel
     );
     ratingDeltaA = deltas.ratingDeltaA;
     ratingDeltaB = deltas.ratingDeltaB;
