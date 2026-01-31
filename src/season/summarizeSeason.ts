@@ -1,6 +1,7 @@
 import { isRatingUpset } from "../ratings.js";
-import { GameCatalog, resolveGameOutcome } from "../models/gameCatalog.js";
-import { teamRegistryFromDocument } from "./adapters.js";
+import { resolveGameOutcome } from "../models/gameCatalog.js";
+import type { Season } from "../models/season.js";
+import { seasonFromDocument } from "./adapters.js";
 import { getSeasonChampion, loadSeasonBracket } from "./hydrateResults.js";
 import type { SeasonDocument } from "./types.js";
 
@@ -15,21 +16,19 @@ export interface SeasonSummary {
   championName?: string;
 }
 
-/** Analyze a validated season document for completeness and upset counts. */
-export function summarizeSeason(doc: SeasonDocument): SeasonSummary {
-  const teamCount = doc.teams.length;
-  const totalRounds = Math.ceil(Math.log2(teamCount));
-  const expectedGames = teamCount - 1;
-  const recordedGames = doc.games.length;
+function resolveSeason(doc: SeasonDocument | Season): Season {
+  return "registry" in doc ? doc : seasonFromDocument(doc);
+}
 
-  const registry = teamRegistryFromDocument(doc);
-  const catalog = GameCatalog.fromGames(doc.games);
+/** Analyze a validated season for completeness and upset counts. */
+export function summarizeSeason(doc: SeasonDocument | Season): SeasonSummary {
+  const season = resolveSeason(doc);
 
   let ratingUpsets = 0;
   let seedUpsets = 0;
 
-  for (const game of catalog.all) {
-    const outcome = resolveGameOutcome(game, registry);
+  for (const game of season.catalog.all) {
+    const outcome = resolveGameOutcome(game, season.registry);
 
     if (
       isRatingUpset(outcome.teamA.rating, outcome.teamB.rating, outcome.winnerIsA)
@@ -43,18 +42,18 @@ export function summarizeSeason(doc: SeasonDocument): SeasonSummary {
   }
 
   const isComplete =
-    recordedGames === expectedGames && canHydrateSeason(doc);
+    season.recordedGames === season.expectedGames && canHydrateSeason(season);
 
   let championName: string | undefined;
   if (isComplete) {
-    championName = getSeasonChampion(doc).name;
+    championName = getSeasonChampion(season).name;
   }
 
   return {
-    teamCount,
-    totalRounds,
-    expectedGames,
-    recordedGames,
+    teamCount: season.teamCount,
+    totalRounds: season.totalRounds,
+    expectedGames: season.expectedGames,
+    recordedGames: season.recordedGames,
     isComplete,
     ratingUpsets,
     seedUpsets,
@@ -62,9 +61,9 @@ export function summarizeSeason(doc: SeasonDocument): SeasonSummary {
   };
 }
 
-function canHydrateSeason(doc: SeasonDocument): boolean {
+function canHydrateSeason(season: Season): boolean {
   try {
-    loadSeasonBracket(doc);
+    loadSeasonBracket(season);
     return true;
   } catch {
     return false;

@@ -1,6 +1,7 @@
 import { isRatingUpset } from "../ratings.js";
-import { GameCatalog, resolveGameOutcome } from "../models/gameCatalog.js";
-import { teamRegistryFromDocument } from "./adapters.js";
+import { resolveGameOutcome } from "../models/gameCatalog.js";
+import type { Season } from "../models/season.js";
+import { seasonFromDocument } from "./adapters.js";
 import { preGameUpsetProbability } from "./replayRatings.js";
 import type { SeasonDocument } from "./types.js";
 import type { Team } from "../types.js";
@@ -18,13 +19,18 @@ export interface SeasonGameUpsetAnalysis {
   wasSeedUpset: boolean;
 }
 
-/** Analyze each recorded game for pre-game upset odds and actual upset outcomes. */
-export function analyzeSeasonUpsets(doc: SeasonDocument): SeasonGameUpsetAnalysis[] {
-  const registry = teamRegistryFromDocument(doc);
-  const catalog = GameCatalog.fromGames(doc.games);
+function resolveSeason(doc: SeasonDocument | Season): Season {
+  return "registry" in doc ? doc : seasonFromDocument(doc);
+}
 
-  return catalog.all.map((game) => {
-    const outcome = resolveGameOutcome(game, registry);
+/** Analyze each recorded game for pre-game upset odds and actual upset outcomes. */
+export function analyzeSeasonUpsets(
+  doc: SeasonDocument | Season
+): SeasonGameUpsetAnalysis[] {
+  const season = resolveSeason(doc);
+
+  return season.catalog.all.map((game) => {
+    const outcome = resolveGameOutcome(game, season.registry);
 
     return {
       round: game.round,
@@ -34,7 +40,7 @@ export function analyzeSeasonUpsets(doc: SeasonDocument): SeasonGameUpsetAnalysi
       winner: outcome.winner,
       scoreA: game.scoreA,
       scoreB: game.scoreB,
-      preGameUpsetProbability: preGameUpsetProbability(doc, game.round, game.slot),
+      preGameUpsetProbability: preGameUpsetProbability(season, game.round, game.slot),
       wasRatingUpset: isRatingUpset(
         outcome.teamA.rating,
         outcome.teamB.rating,

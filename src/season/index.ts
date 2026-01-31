@@ -1,11 +1,17 @@
 export type { SeasonDocument, SeasonGame, SeasonTeam } from "./types.js";
 export {
+  seasonFromDocument,
   seasonTeamToTeam,
   teamMapFromDocument,
   teamRegistryFromDocument,
   teamsFromDocument,
 } from "./adapters.js";
-export { parseSeasonFile, parseSeasonJson } from "./parseSeason.js";
+export {
+  loadSeasonFile,
+  parseSeason,
+  parseSeasonFile,
+  parseSeasonJson,
+} from "./parseSeason.js";
 export { loadSeasonFixture } from "./loadFixture.js";
 export { validateSeasonDocument } from "./validateSeason.js";
 export {
@@ -55,3 +61,4 @@ export {
   type ImportSeasonFixtureOptions,
   type WriteSeasonFixtureOptions,
 } from "./writeFixture.js";
+export { Season } from "../models/season.js";

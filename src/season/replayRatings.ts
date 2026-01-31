@@ -4,12 +4,12 @@ import {
   forecastMatchupUpset,
   type UpsetOutlookOptions,
 } from "../probability/seedUpsets.js";
-import { GameCatalog } from "../models/gameCatalog.js";
+import type { Season } from "../models/season.js";
 import { createTournamentState, recordGameResult } from "../tournamentState.js";
 import { defaultRatingModel, type RatingModel } from "../ratingsModel.js";
 import type { Team, TournamentState } from "../types.js";
 import { isByeTeam } from "../types.js";
-import { teamRegistryFromDocument } from "./adapters.js";
+import { seasonFromDocument } from "./adapters.js";
 import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
 import type { SeasonDocument } from "./types.js";
 
@@ -25,12 +25,17 @@ export interface SeasonRatingReplay {
   deltas: SeasonRatingDelta[];
 }
 
+function resolveSeason(doc: SeasonDocument | Season): Season {
+  return "registry" in doc ? doc : seasonFromDocument(doc);
+}
+
 /** Replay recorded season games through the Elo update pipeline. */
 export function replaySeasonRatings(
-  doc: SeasonDocument,
+  doc: SeasonDocument | Season,
   model: RatingModel = defaultRatingModel()
 ): SeasonRatingReplay {
-  const bracket = createBracketFromSeason(doc);
+  const season = resolveSeason(doc);
+  const bracket = createBracketFromSeason(season);
   const state = createTournamentState(bracket.teams.filter((team) => !isByeTeam(team)));
   const startRatings = new Map<string, number>();
 
@@ -38,14 +43,11 @@ export function replaySeasonRatings(
     startRatings.set(id, rating.rating);
   }
 
-  const catalog = GameCatalog.fromGames(doc.games);
-  const registry = teamRegistryFromDocument(doc);
-
-  for (const game of catalog.all) {
+  for (const game of season.catalog.all) {
     const idx = matchIndex(game.round, game.slot, bracket.rounds);
     const match = bracket.matches[idx];
-    const baseA = registry.require(game.teamAId);
-    const baseB = registry.require(game.teamBId);
+    const baseA = season.registry.require(game.teamAId);
+    const baseB = season.registry.require(game.teamBId);
     const teamA: Team = {
       ...baseA,
       rating: state.ratings.get(game.teamAId)?.rating ?? baseA.rating,
@@ -70,10 +72,10 @@ export function replaySeasonRatings(
     match.winner = game.winnerId === teamA.id ? teamA : teamB;
   }
 
-  const deltas: SeasonRatingDelta[] = doc.teams.map((entry) => {
+  const deltas: SeasonRatingDelta[] = season.teams.map((entry) => {
     const endRating = state.ratings.get(entry.id)?.rating ?? entry.rating;
     const startRating = startRatings.get(entry.id) ?? entry.rating;
-    const team = registry.require(entry.id);
+    const team = season.registry.require(entry.id);
     return {
       team: {
         ...team,
@@ -92,16 +94,15 @@ export function replaySeasonRatings(
 
 /** Estimate pre-tournament upset probability for a recorded game. */
 export function preGameUpsetProbability(
-  doc: SeasonDocument,
+  doc: SeasonDocument | Season,
   round: number,
   slot: number,
   options: UpsetOutlookOptions = {}
 ): number {
-  const catalog = GameCatalog.fromGames(doc.games);
-  const registry = teamRegistryFromDocument(doc);
-  const game = catalog.requireAt(round, slot);
-  const teamA = registry.require(game.teamAId);
-  const teamB = registry.require(game.teamBId);
+  const season = resolveSeason(doc);
+  const game = season.catalog.requireAt(round, slot);
+  const teamA = season.registry.require(game.teamAId);
+  const teamB = season.registry.require(game.teamBId);
 
   const historicalWeight =
     options.historicalWeight ?? DEFAULT_HISTORICAL_WEIGHT;

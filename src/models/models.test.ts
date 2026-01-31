@@ -4,7 +4,7 @@ import {
   bracketSlotOf,
   sameBracketSlot,
 } from "./game.js";
-import { matchBracketSlot } from "./match.js";
+import { isCompletedMatch, isReadyMatch, matchBracketSlot } from "./match.js";
 import {
   isByeTeam,
   toRuntimeTeam,
@@ -80,5 +80,44 @@ describe("bracket slot helpers", () => {
         winner: null,
       })
     ).toEqual({ round: 1, slot: 0 });
+  });
+});
+
+describe("match lifecycle types", () => {
+  const teamA = { id: "a", name: "Alpha", rating: 1600 };
+  const teamB = { id: "b", name: "Beta", rating: 1500 };
+
+  it("narrows ready matches awaiting a result", () => {
+    const pending = {
+      id: "m-0",
+      round: 0,
+      slot: 0,
+      teamA,
+      teamB,
+      winner: null,
+    };
+
+    expect(isReadyMatch(pending)).toBe(true);
+    if (isReadyMatch(pending)) {
+      expect(pending.teamA.id).toBe("a");
+    }
+  });
+
+  it("narrows completed matches with scores", () => {
+    const finished = {
+      id: "m-0",
+      round: 0,
+      slot: 0,
+      teamA,
+      teamB,
+      winner: teamA,
+      scoreA: 72,
+      scoreB: 65,
+    };
+
+    expect(isCompletedMatch(finished)).toBe(true);
+    if (isCompletedMatch(finished)) {
+      expect(finished.scoreA).toBe(72);
+    }
   });
 });

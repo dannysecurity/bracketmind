@@ -18,7 +18,7 @@ export {
   recordedGameFromMatch,
   recordedGamesFromBracket,
   resolveWinner,
-} from "./gameResults.js";
+} from "../models/bracketGame.js";
 export {
   bracketOrderingForTeams,
   orderTeamsForBracket,

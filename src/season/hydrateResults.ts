@@ -1,21 +1,26 @@
 import { getChampion } from "../bracket.js";
 import { matchIndex } from "../bracket/layout.js";
 import { advanceWinner } from "../domain/advanceWinner.js";
-import { applyGameResultToMatch } from "../domain/gameResults.js";
-import { GameCatalog } from "../models/gameCatalog.js";
+import { applyGameResultToMatch } from "../models/bracketGame.js";
+import type { Season } from "../models/season.js";
 import type { Bracket } from "../types.js";
+import { seasonFromDocument } from "./adapters.js";
 import { createBracketFromSeason } from "./buildBracket.js";
-import type { SeasonDocument, SeasonGame } from "./types.js";
+import type { SeasonDocument } from "./types.js";
+
+function resolveSeason(input: SeasonDocument | Season): Season {
+  return "registry" in input ? input : seasonFromDocument(input);
+}
 
 /** Apply recorded game results to a bracket without simulation. */
 export function hydrateBracketResults(
   bracket: Bracket,
-  games: SeasonGame[]
+  season: SeasonDocument | Season
 ): Bracket {
+  const model = resolveSeason(season);
   const working = structuredClone(bracket);
-  const catalog = GameCatalog.fromGames(games);
 
-  for (const game of catalog.all) {
+  for (const game of model.catalog.all) {
     const idx = matchIndex(game.round, game.slot, working.rounds);
     const match = working.matches[idx];
 
@@ -41,12 +46,13 @@ export function hydrateBracketResults(
 }
 
 /** Parse a season document into a fully hydrated bracket with recorded results. */
-export function loadSeasonBracket(doc: SeasonDocument): Bracket {
-  const bracket = createBracketFromSeason(doc);
-  return hydrateBracketResults(bracket, doc.games);
+export function loadSeasonBracket(doc: SeasonDocument | Season): Bracket {
+  const model = resolveSeason(doc);
+  const bracket = createBracketFromSeason(model);
+  return hydrateBracketResults(bracket, model);
 }
 
 /** Return the champion from a hydrated season bracket. */
-export function getSeasonChampion(doc: SeasonDocument) {
+export function getSeasonChampion(doc: SeasonDocument | Season) {
   return getChampion(loadSeasonBracket(doc));
 }

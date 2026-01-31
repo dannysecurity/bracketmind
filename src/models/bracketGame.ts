@@ -1,24 +1,18 @@
 import type { GameResult, RecordedGame } from "./game.js";
-import type { Match } from "./match.js";
+import {
+  isCompletedMatch,
+  type CompletedMatch,
+  type Match,
+} from "./match.js";
 import type { Team } from "./team.js";
+
+export { isCompletedMatch } from "./match.js";
+export type { CompletedMatch, ReadyMatch } from "./match.js";
 
 /** Scores and winner id shared by completed matches and recorded games. */
 export type CompletedGameScores = Required<Pick<GameResult, "scoreA" | "scoreB">> & {
   winnerId: string;
 };
-
-/** Whether a live match has been played through with scores and a winner. */
-export function isCompletedMatch(
-  match: Match
-): match is Match & CompletedGameScores & { winner: Team; teamA: Team; teamB: Team } {
-  return (
-    match.winner != null &&
-    match.teamA != null &&
-    match.teamB != null &&
-    match.scoreA != null &&
-    match.scoreB != null
-  );
-}
 
 export function gameResultFromMatch(match: Match): GameResult | undefined {
   if (!isCompletedMatch(match)) {

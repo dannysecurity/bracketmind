@@ -7,7 +7,7 @@ import {
   gameResultFromRecordedGame,
   recordedGameFromMatch,
   resolveWinner,
-} from "./gameResults.js";
+} from "../models/bracketGame.js";
 import { orderTeamsForBracket, seasonTeamToTeam } from "./teams.js";
 import type { Match, Team } from "../types.js";
 

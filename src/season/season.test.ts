@@ -132,7 +132,9 @@ describe("loadSeasonBracket", () => {
     const badGames = structuredClone(doc.games);
     badGames[0] = { ...badGames[0], teamAId: "illinois" };
 
-    expect(() => hydrateBracketResults(bracket, badGames)).toThrow(/teams mismatch/);
+    expect(() =>
+      hydrateBracketResults(bracket, { ...doc, games: badGames })
+    ).toThrow(/teams mismatch/);
   });
 });
 
