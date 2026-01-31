@@ -59,6 +59,11 @@ describe("blendUpsetProbabilities", () => {
   it("linearly blends at the default weight", () => {
     expect(blendUpsetProbabilities(0.4, 0.2)).toBeCloseTo(0.33, 5);
   });
+
+  it("clamps historical weight to the 0–1 range", () => {
+    expect(blendUpsetProbabilities(0.4, 0.2, -0.5)).toBe(0.4);
+    expect(blendUpsetProbabilities(0.4, 0.2, 1.5)).toBe(0.2);
+  });
 });
 
 describe("forecastMatchupUpset", () => {
@@ -102,6 +107,9 @@ describe("analyzeRoundOneUpsetOutlook", () => {
     const oneSixteen = outlook.matchups.find(
       (matchup) => matchup.seedA === 1 && matchup.seedB === 16
     );
+    const fiveTwelve = outlook.matchups.find(
+      (matchup) => matchup.seedA === 5 && matchup.seedB === 12
+    );
     const eightNine = outlook.matchups.find(
       (matchup) => matchup.seedA === 8 && matchup.seedB === 9
     );
@@ -109,6 +117,10 @@ describe("analyzeRoundOneUpsetOutlook", () => {
     expect(outlook.matchups).toHaveLength(8);
     expect(oneSixteen?.historicalUpsetProbability).toBe(0.01);
     expect(oneSixteen?.historicalRateSource).toBe("canonical-first-round");
+    expect(fiveTwelve?.historicalUpsetProbability).toBe(0.35);
+    expect(fiveTwelve?.historicalRateSource).toBe("canonical-first-round");
+    expect(fiveTwelve?.favoriteSeed).toBe(5);
+    expect(fiveTwelve?.underdogSeed).toBe(12);
     expect(eightNine?.historicalUpsetProbability).toBe(0.48);
     expect(eightNine?.historicalRateSource).toBe("canonical-first-round");
     expect(outlook.mostLikelyUpset?.seedA).toBe(8);

@@ -125,7 +125,6 @@ function buildRoundOneOutlook(
     historicalWeight,
     0
   );
-  const lookup = lookupHistoricalUpsetRate(seedA, seedB, 0);
 
   return {
     slot,
@@ -133,8 +132,8 @@ function buildRoundOneOutlook(
     teamB,
     seedA,
     seedB,
-    favoriteSeed: lookup.favoriteSeed,
-    underdogSeed: lookup.underdogSeed,
+    favoriteSeed: Math.min(seedA, seedB),
+    underdogSeed: Math.max(seedA, seedB),
     eloUpsetProbability: forecast.eloUpsetProbability,
     historicalUpsetProbability: forecast.historicalUpsetProbability,
     historicalRateSource: forecast.historicalRateSource,
