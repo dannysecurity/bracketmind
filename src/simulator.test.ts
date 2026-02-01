@@ -5,6 +5,7 @@ import {
   createSeededRng,
   createTournamentState,
   monteCarloGameOutcomes,
+  wilsonScoreInterval,
 } from "./simulator.js";
 import { countingRng } from "./testing/simulationFixtures.js";
 import type { Team } from "./types.js";
@@ -178,6 +179,26 @@ describe("simulateGame", () => {
     expect(upset.margin).toBeGreaterThan(0);
   });
 
+  it("preserves projected margin when the loser score floor binds", () => {
+    const favorite = team("Favorite", 2400);
+    const underdog = team("Underdog", 800);
+    const rolls = [0.01, 0.99, 0.99];
+    const marginNoise = Math.floor(rolls[1] * 11) - 5;
+    const projectedMargin = Math.max(
+      1,
+      expectedMargin(favorite, underdog) + marginNoise
+    );
+
+    const result = simulateGame(favorite, underdog, {
+      rng: sequenceRng(rolls),
+    });
+
+    expect(result.winner).toBe(favorite);
+    expect(result.scoreB).toBe(55);
+    expect(result.margin).toBe(projectedMargin);
+    expect(result.scoreA).toBe(55 + projectedMargin);
+  });
+
   it("updates tournament ratings when state is provided", () => {
     const teamA = team("TeamA", 1500);
     const teamB = team("TeamB", 1500);
@@ -192,6 +213,21 @@ describe("simulateGame", () => {
     expect(result.ratingDeltaB).toBeLessThan(0);
     expect(teamA.rating).toBeGreaterThan(1500);
     expect(teamB.rating).toBeLessThan(1500);
+  });
+});
+
+describe("wilsonScoreInterval", () => {
+  it("returns a symmetric interval around the observed rate", () => {
+    const interval = wilsonScoreInterval(712, 1000);
+    expect(interval.low).toBeLessThan(0.712);
+    expect(interval.high).toBeGreaterThan(0.712);
+    expect(interval.low + interval.high).toBeCloseTo(1.424, 2);
+  });
+
+  it("narrows as trial count increases", () => {
+    const small = wilsonScoreInterval(7, 10);
+    const large = wilsonScoreInterval(700, 1000);
+    expect(large.high - large.low).toBeLessThan(small.high - small.low);
   });
 });
 
@@ -213,6 +249,10 @@ describe("monteCarloGameOutcomes", () => {
     expect(result.marginPercentiles.p50).toBeLessThanOrEqual(
       result.marginPercentiles.p90
     );
+    expect(result.winRateConfidenceA.low).toBeLessThanOrEqual(result.winRateA);
+    expect(result.winRateConfidenceA.high).toBeGreaterThanOrEqual(result.winRateA);
+    expect(result.winRateConfidenceB.low).toBeLessThanOrEqual(result.winRateB);
+    expect(result.winRateConfidenceB.high).toBeGreaterThanOrEqual(result.winRateB);
   });
 
   it("favors the higher-rated team over many trials", () => {

@@ -140,7 +140,7 @@ describe("simulateGame edge cases", () => {
     assertWinnerHasHigherScore(result, favorite);
   });
 
-  it("caps the winner score using the margin-derived ceiling", () => {
+  it("caps the winner score using the margin-derived ceiling when the floor does not bind", () => {
     const teamA = team("Alpha", 1500);
     const teamB = team("Beta", 1500);
     const rolls = [0.01, 0.99, 0.99];
@@ -557,7 +557,7 @@ describe("simulateGame edge cases", () => {
     expect(endingTotal).toBe(startingTotal);
   });
 
-  it("compresses realized margin below the projected spread when the loser floor binds", () => {
+  it("preserves projected margin when the loser score floor binds", () => {
     const favorite = team("Favorite", 2400);
     const underdog = team("Longshot", 800);
     const rolls = [0.01, 0.99, 0.99];
@@ -573,8 +573,8 @@ describe("simulateGame edge cases", () => {
 
     expect(result.winner).toBe(favorite);
     expect(result.scoreB).toBe(55);
-    expect(result.margin).toBe(result.scoreA - result.scoreB);
-    expect(result.margin).toBeLessThan(projectedMargin);
+    expect(result.margin).toBe(projectedMargin);
+    expect(result.scoreA).toBe(55 + projectedMargin);
   });
 
   it("ignores round metadata when no tournament state is provided", () => {

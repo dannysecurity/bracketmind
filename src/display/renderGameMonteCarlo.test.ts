@@ -14,6 +14,8 @@ describe("renderGameMonteCarloSummary", () => {
       iterations: 1000,
       winRateA: 0.712,
       winRateB: 0.288,
+      winRateConfidenceA: { low: 0.684, high: 0.738 },
+      winRateConfidenceB: { low: 0.262, high: 0.316 },
       upsetRate: 0.12,
       avgMargin: 7.4,
       marginStdDev: 3.2,
@@ -40,6 +42,7 @@ describe("renderGameMonteCarloSummary", () => {
     expect(text).toContain("Kansas");
     expect(text).toContain("71.2%");
     expect(text).toContain("Analytical win rate (Duke): 71.0%");
+    expect(text).toContain("Win rate 95% CI: Duke 68.4–73.8%, Kansas 26.2–31.6%");
     expect(text).toContain("Avg score: Duke 74.2, Kansas 66.8");
     expect(text).toContain("Avg margin: 7.4 pts (σ 3.2)");
     expect(text).toContain("Margin spread (p10–p90): 4.0–11.0 pts (median 7.0)");

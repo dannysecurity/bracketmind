@@ -45,6 +45,12 @@ export function renderGameMonteCarloSummary(
     )
   );
   lines.push(
+    dim(
+      `  Win rate 95% CI: ${teamA.name} ${(result.winRateConfidenceA.low * 100).toFixed(1)}–${(result.winRateConfidenceA.high * 100).toFixed(1)}%, ${teamB.name} ${(result.winRateConfidenceB.low * 100).toFixed(1)}–${(result.winRateConfidenceB.high * 100).toFixed(1)}%`,
+      options
+    )
+  );
+  lines.push(
     `  Avg score: ${teamA.name} ${result.avgScoreA.toFixed(1)}, ${teamB.name} ${result.avgScoreB.toFixed(1)}`
   );
   lines.push(

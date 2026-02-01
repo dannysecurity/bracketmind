@@ -60,11 +60,21 @@ export interface MarginPercentiles {
   p90: number;
 }
 
+/** Wilson score confidence interval for a simulated win rate. */
+export interface WinRateConfidenceInterval {
+  low: number;
+  high: number;
+}
+
 /** Aggregated statistics from repeated head-to-head game simulations. */
 export interface GameMonteCarloResult {
   iterations: number;
   winRateA: number;
   winRateB: number;
+  /** 95% Wilson score interval for team A's simulated win rate. */
+  winRateConfidenceA: WinRateConfidenceInterval;
+  /** 95% Wilson score interval for team B's simulated win rate. */
+  winRateConfidenceB: WinRateConfidenceInterval;
   upsetRate: number;
   avgMargin: number;
   /** Population standard deviation of point margins across trials. */

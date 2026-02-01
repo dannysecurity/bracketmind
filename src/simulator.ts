@@ -49,11 +49,16 @@ function generateScores(
     1,
     expectedMarginFromRatings(winnerRating, loserRating) + marginNoise
   );
-  const scoreWinner =
+  let scoreWinner =
     BASE_WINNER_SCORE +
     Math.floor(rng() * WINNER_SCORE_SPREAD) +
     Math.floor(margin / 2);
-  const scoreLoser = Math.max(LOSER_SCORE_FLOOR, scoreWinner - margin);
+  let scoreLoser = scoreWinner - margin;
+
+  if (scoreLoser < LOSER_SCORE_FLOOR) {
+    scoreLoser = LOSER_SCORE_FLOOR;
+    scoreWinner = scoreLoser + margin;
+  }
 
   return { scoreWinner, scoreLoser };
 }
@@ -179,6 +184,30 @@ function summarizeMargins(margins: number[], avgMargin: number) {
   };
 }
 
+/** Wilson score interval for a binomial proportion (default 95% z = 1.96). */
+export function wilsonScoreInterval(
+  successes: number,
+  trials: number,
+  z = 1.96
+): { low: number; high: number } {
+  if (trials <= 0) {
+    return { low: 0, high: 0 };
+  }
+
+  const p = successes / trials;
+  const z2 = z * z;
+  const denominator = 1 + z2 / trials;
+  const center = (p + z2 / (2 * trials)) / denominator;
+  const margin =
+    (z / denominator) *
+    Math.sqrt((p * (1 - p)) / trials + z2 / (4 * trials * trials));
+
+  return {
+    low: Math.max(0, center - margin),
+    high: Math.min(1, center + margin),
+  };
+}
+
 /** Run many head-to-head simulations and aggregate win, score, and upset rates. */
 export function monteCarloGameOutcomes(
   teamA: Team,
@@ -233,11 +262,15 @@ export function monteCarloGameOutcomes(
 
   const avgMargin = marginTotal / iterations;
   const marginSummary = summarizeMargins(margins, avgMargin);
+  const winRateConfidenceA = wilsonScoreInterval(winsA, iterations);
+  const winRateConfidenceB = wilsonScoreInterval(iterations - winsA, iterations);
 
   return {
     iterations,
     winRateA: winsA / iterations,
     winRateB: (iterations - winsA) / iterations,
+    winRateConfidenceA,
+    winRateConfidenceB,
     upsetRate: upsets / iterations,
     avgMargin,
     marginStdDev: marginSummary.marginStdDev,
