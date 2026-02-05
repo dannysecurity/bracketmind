@@ -235,3 +235,10 @@ export function assertBracketSimulationInvariants(bracket: Bracket): void {
     }
   }
 }
+
+/** Map team IDs to pre-seeded games-played counts for bracket simulation. */
+export function priorGamesMap(
+  entries: Array<[string, number]>
+): ReadonlyMap<string, number> {
+  return new Map(entries);
+}

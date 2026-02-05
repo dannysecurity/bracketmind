@@ -23,6 +23,15 @@ export function simulateBracket(
     ? createTournamentState(working.teams)
     : undefined;
 
+  if (tournamentState && options.priorGamesPlayed) {
+    for (const [teamId, gamesPlayed] of options.priorGamesPlayed) {
+      const entry = tournamentState.ratings.get(teamId);
+      if (entry) {
+        entry.gamesPlayed = gamesPlayed;
+      }
+    }
+  }
+
   for (let round = 0; round < working.rounds; round++) {
     const slots = working.teams.length / Math.pow(2, round + 1);
 

@@ -51,6 +51,11 @@ export interface BracketSimulationOptions {
   dynamicRatings?: boolean;
   /** Tunable Elo update parameters when dynamicRatings is enabled. */
   ratingModel?: RatingModel;
+  /**
+   * Pre-seed games-played counts before the bracket starts.
+   * Useful for teams entering with prior-season history (provisional vs established K).
+   */
+  priorGamesPlayed?: ReadonlyMap<string, number>;
 }
 
 /** Margin distribution percentiles from repeated head-to-head simulations. */
