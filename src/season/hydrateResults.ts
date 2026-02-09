@@ -4,13 +4,9 @@ import { advanceWinner } from "../domain/advanceWinner.js";
 import { applyGameResultToMatch } from "../models/bracketGame.js";
 import type { Season } from "../models/season.js";
 import type { Bracket } from "../types.js";
-import { seasonFromDocument } from "./adapters.js";
 import { createBracketFromSeason } from "./buildBracket.js";
+import { resolveSeason } from "./resolveSeason.js";
 import type { SeasonDocument } from "./types.js";
-
-function resolveSeason(input: SeasonDocument | Season): Season {
-  return "registry" in input ? input : seasonFromDocument(input);
-}
 
 /** Apply recorded game results to a bracket without simulation. */
 export function hydrateBracketResults(

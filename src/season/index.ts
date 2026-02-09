@@ -6,6 +6,7 @@ export {
   teamRegistryFromDocument,
   teamsFromDocument,
 } from "./adapters.js";
+export { resolveSeason } from "./resolveSeason.js";
 export {
   loadSeasonFile,
   parseSeason,

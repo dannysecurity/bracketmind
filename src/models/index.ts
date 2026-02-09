@@ -13,7 +13,6 @@ export {
   validateRecordedGames,
 } from "./gameValidation.js";
 export type { BracketGeometry } from "./gameValidation.js";
-export type { CompletedGameScores } from "./bracketGame.js";
 export {
   applyGameResultToMatch,
   gameResultFromMatch,

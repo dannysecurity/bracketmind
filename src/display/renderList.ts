@@ -1,4 +1,5 @@
 import type { Bracket } from "../types.js";
+import { isByeTeam } from "../types.js";
 import {
   buildBracketView,
   formatTeamLabel,
@@ -101,7 +102,7 @@ export function renderFieldSummary(
   bracket: Bracket,
   options: ColorOptions = { enabled: false }
 ): string | null {
-  const byeCount = bracket.teams.filter((team) => team.name === "BYE").length;
+  const byeCount = bracket.teams.filter(isByeTeam).length;
   if (byeCount === 0) {
     return null;
   }

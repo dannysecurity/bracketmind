@@ -1,8 +1,8 @@
 import { isRatingUpset } from "../ratings.js";
 import { resolveGameOutcome } from "../models/gameCatalog.js";
 import type { Season } from "../models/season.js";
-import { seasonFromDocument } from "./adapters.js";
 import { getSeasonChampion, loadSeasonBracket } from "./hydrateResults.js";
+import { resolveSeason } from "./resolveSeason.js";
 import type { SeasonDocument } from "./types.js";
 
 export interface SeasonSummary {
@@ -14,10 +14,6 @@ export interface SeasonSummary {
   ratingUpsets: number;
   seedUpsets: number;
   championName?: string;
-}
-
-function resolveSeason(doc: SeasonDocument | Season): Season {
-  return "registry" in doc ? doc : seasonFromDocument(doc);
 }
 
 /** Analyze a validated season for completeness and upset counts. */

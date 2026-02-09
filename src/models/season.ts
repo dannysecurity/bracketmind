@@ -1,4 +1,7 @@
-import { bracketGeometryForTeamCount } from "./gameValidation.js";
+import {
+  bracketGeometryForTeamCount,
+  validateRecordedGames,
+} from "./gameValidation.js";
 import { GameCatalog } from "./gameCatalog.js";
 import type { RecordedGame } from "./game.js";
 import { TeamRegistry } from "./registry.js";
@@ -30,7 +33,7 @@ export class Season {
     this.seededTeams = seededTeams;
   }
 
-  /** Build a season from an already-validated document. */
+  /** Build a season from a document, validating teams and recorded games. */
   static fromDocument(doc: {
     id: string;
     name: string;
@@ -39,6 +42,8 @@ export class Season {
     games: readonly RecordedGame[];
   }): Season {
     validateSeededTeams(doc.teams);
+    const teamIds = new Set(doc.teams.map((team) => team.id));
+    validateRecordedGames(doc.games, teamIds, doc.teams.length);
     const registry = TeamRegistry.fromSeededTeams(doc.teams);
     const catalog = GameCatalog.fromGames(doc.games);
 

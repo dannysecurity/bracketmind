@@ -9,8 +9,8 @@ import { createTournamentState, recordGameResult } from "../tournamentState.js";
 import { defaultRatingModel, type RatingModel } from "../ratingsModel.js";
 import type { Team, TournamentState } from "../types.js";
 import { isByeTeam } from "../types.js";
-import { seasonFromDocument } from "./adapters.js";
 import { createBracketFromSeason, matchIndex } from "./buildBracket.js";
+import { resolveSeason } from "./resolveSeason.js";
 import type { SeasonDocument } from "./types.js";
 
 export interface SeasonRatingDelta {
@@ -23,10 +23,6 @@ export interface SeasonRatingDelta {
 export interface SeasonRatingReplay {
   state: TournamentState;
   deltas: SeasonRatingDelta[];
-}
-
-function resolveSeason(doc: SeasonDocument | Season): Season {
-  return "registry" in doc ? doc : seasonFromDocument(doc);
 }
 
 /** Replay recorded season games through the Elo update pipeline. */

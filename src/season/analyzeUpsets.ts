@@ -1,8 +1,8 @@
 import { isRatingUpset } from "../ratings.js";
 import { resolveGameOutcome } from "../models/gameCatalog.js";
 import type { Season } from "../models/season.js";
-import { seasonFromDocument } from "./adapters.js";
 import { preGameUpsetProbability } from "./replayRatings.js";
+import { resolveSeason } from "./resolveSeason.js";
 import type { SeasonDocument } from "./types.js";
 import type { Team } from "../types.js";
 
@@ -17,10 +17,6 @@ export interface SeasonGameUpsetAnalysis {
   preGameUpsetProbability: number;
   wasRatingUpset: boolean;
   wasSeedUpset: boolean;
-}
-
-function resolveSeason(doc: SeasonDocument | Season): Season {
-  return "registry" in doc ? doc : seasonFromDocument(doc);
 }
 
 /** Analyze each recorded game for pre-game upset odds and actual upset outcomes. */

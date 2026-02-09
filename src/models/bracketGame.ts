@@ -9,11 +9,6 @@ import type { Team } from "./team.js";
 export { isCompletedMatch } from "./match.js";
 export type { CompletedMatch, ReadyMatch } from "./match.js";
 
-/** Scores and winner id shared by completed matches and recorded games. */
-export type CompletedGameScores = Required<Pick<GameResult, "scoreA" | "scoreB">> & {
-  winnerId: string;
-};
-
 export function gameResultFromMatch(match: Match): GameResult | undefined {
   if (!isCompletedMatch(match)) {
     return undefined;

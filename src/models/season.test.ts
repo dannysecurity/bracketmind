@@ -132,4 +132,26 @@ describe("Season model", () => {
     expect(teams.map((team) => team.id)).toEqual(["a", "b", "c", "d"]);
     expect(teams.every((team) => team.seed != null)).toBe(true);
   });
+
+  it("rejects invalid recorded games when building from a document", () => {
+    expect(() =>
+      Season.fromDocument({
+        id: "demo",
+        name: "Demo",
+        year: 2024,
+        teams: seededField,
+        games: [
+          {
+            round: 0,
+            slot: 0,
+            teamAId: "a",
+            teamBId: "d",
+            scoreA: 70,
+            scoreB: 80,
+            winnerId: "a",
+          },
+        ],
+      })
+    ).toThrow(/outscore/);
+  });
 });

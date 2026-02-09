@@ -5,13 +5,14 @@ import {
 import { createTeamRating, isRatingUpset, type TeamRating } from "./ratings.js";
 import { defaultRatingModel, type RatingModel } from "./ratingsModel.js";
 import type { Team, TournamentState } from "./types.js";
+import { isByeTeam } from "./types.js";
 
 /** Initialize tournament rating state from the bracket field. */
 export function createTournamentState(teams: Team[]): TournamentState {
   const ratings = new Map<string, TeamRating>();
 
   for (const team of teams) {
-    if (team.name === "BYE") {
+    if (isByeTeam(team)) {
       continue;
     }
     ratings.set(team.id, createTeamRating(team.rating));

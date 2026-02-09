@@ -130,7 +130,14 @@ describe("loadSeasonBracket", () => {
     const doc = loadFixture("2024-east-mini.json");
     const bracket = createBracketFromSeason(doc);
     const badGames = structuredClone(doc.games);
-    badGames[0] = { ...badGames[0], teamAId: "illinois" };
+    badGames[0] = {
+      ...badGames[0],
+      teamAId: "illinois",
+      teamBId: "fau",
+      scoreA: 81,
+      scoreB: 62,
+      winnerId: "illinois",
+    };
 
     expect(() =>
       hydrateBracketResults(bracket, { ...doc, games: badGames })

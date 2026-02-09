@@ -3,8 +3,8 @@ import { buildBracket } from "../domain/buildBracket.js";
 import type { Season } from "../models/season.js";
 import { monteCarloChampionshipRates } from "../simulator.js";
 import type { Team } from "../types.js";
-import { seasonFromDocument } from "./adapters.js";
 import { getSeasonChampion } from "./hydrateResults.js";
+import { resolveSeason } from "./resolveSeason.js";
 import type { SeasonDocument } from "./types.js";
 
 export interface SeasonPredictionComparison {
@@ -14,10 +14,6 @@ export interface SeasonPredictionComparison {
   actualChampionPredictedRate: number;
   mostFavoredTeam: Team;
   mostFavoredRate: number;
-}
-
-function resolveSeason(doc: SeasonDocument | Season) {
-  return "registry" in doc ? doc : seasonFromDocument(doc);
 }
 
 /** Compare pre-tournament Monte Carlo predictions against the actual champion. */

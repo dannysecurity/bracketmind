@@ -1,4 +1,5 @@
 import type { Bracket } from "../types.js";
+import { isByeTeam } from "../types.js";
 import {
   bracketGridRowCount,
   displayRow,
@@ -146,7 +147,7 @@ function renderAlignedMatchCard(
 }
 
 function renderFieldSummaryHtml(bracket: Bracket): string {
-  const byeCount = bracket.teams.filter((team) => team.name === "BYE").length;
+  const byeCount = bracket.teams.filter(isByeTeam).length;
   if (byeCount === 0) {
     return "";
   }
