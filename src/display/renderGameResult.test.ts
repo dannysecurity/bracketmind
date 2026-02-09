@@ -48,4 +48,25 @@ describe("renderGameResult", () => {
 
     expect(lines.join("\n")).toContain("Rating change: Alpha +16, Beta -16");
   });
+
+  it("shows round context when round and total rounds are provided", () => {
+    const teamA = team("a", "Duke", 1650);
+    const teamB = team("b", "Kansas", 1500);
+    const result: SimulationResult = {
+      winner: teamA,
+      scoreA: 72,
+      scoreB: 68,
+      winProbabilityA: 0.71,
+      margin: 4,
+      isUpset: false,
+    };
+
+    const lines = renderGameResult(teamA, teamB, result, {
+      enabled: false,
+      round: 3,
+      totalRounds: 4,
+    });
+
+    expect(lines.join("\n")).toContain("Round context: Final");
+  });
 });

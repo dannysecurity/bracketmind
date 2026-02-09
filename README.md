@@ -22,6 +22,7 @@ npm run build
 npm start simulate Duke Kansas UConn Purdue -- --format tree
 npm start predict Duke Kansas UConn Purdue --iterations 2000
 npm start game Duke:1650 Kansas:1500 --trials 5000 --seed 42
+npm start game Duke:1650 Kansas:1500 --dynamic-ratings --round 3 --total-rounds 4
 npm start upsets Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
 npm start serve -- --port 3000
 ```
@@ -37,7 +38,7 @@ npm test
 
 | Command | Description |
 |---------|-------------|
-| `game <team1> <team2> [--seed N] [--trials N] [--no-color]` | Simulate one game or forecast head-to-head odds (default 1 trial) |
+| `game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--round N] [--total-rounds N] [--no-color]` | Simulate one game or forecast head-to-head odds (default 1 trial) |
 | `simulate <teams...> [--format list\|tree] [--no-color]` | Run one full bracket and print results |
 | `predict <teams...> [--iterations N] [--no-color]` | Championship probability estimates (default 1000 runs) |
 | `seedings <teams...> [--no-color]` | Show rating-based seeds, round-one upset odds, and blended historical seed outlook |

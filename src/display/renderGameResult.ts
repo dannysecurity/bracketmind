@@ -1,8 +1,13 @@
 import type { SimulationResult, Team } from "../types.js";
 import { ColorOptions, dim, heading, winner } from "./colors.js";
+import { roundLabel } from "./roundLabels.js";
 
 export interface GameRenderOptions extends ColorOptions {
   showRatingDeltas?: boolean;
+  /** 0-based round index for contextual Elo updates and display. */
+  round?: number;
+  /** Total bracket rounds paired with `round`. */
+  totalRounds?: number;
 }
 
 function formatRating(team: Team): string {
@@ -23,6 +28,15 @@ export function renderGameResult(
   lines.push(heading("Game Simulation", options));
   lines.push("");
   lines.push(`  ${formatRating(teamA)} vs ${formatRating(teamB)}`);
+
+  if (options.round !== undefined && options.totalRounds !== undefined) {
+    lines.push(
+      dim(
+        `  Round context: ${roundLabel(options.round, options.totalRounds)}`,
+        options
+      )
+    );
+  }
 
   const scoreLine = `  → ${formatScoreTeam(teamA, result.scoreA, result.winner, options)} - ${formatScoreTeam(teamB, result.scoreB, result.winner, options)}`;
   lines.push(scoreLine);

@@ -10,6 +10,7 @@ import {
   createTournamentState,
   monteCarloChampionshipRates,
   monteCarloGameOutcomes,
+  resolveSimulationRoundContext,
   simulateGame,
 } from "./simulator.js";
 import { startServer } from "./server.js";
@@ -272,12 +273,22 @@ function parseGameArgs(args: string[]): {
   dynamicRatings: boolean;
   seed?: number;
   trials: number;
+  round?: number;
+  totalRounds?: number;
 } {
   const seedFlag = args.indexOf("--seed");
   const seedValue = seedFlag >= 0 ? parseInt(args[seedFlag + 1], 10) : undefined;
   const trialsFlag = args.indexOf("--trials");
   const trialsValue =
     trialsFlag >= 0 ? parseInt(args[trialsFlag + 1], 10) : 1;
+  const roundFlag = args.indexOf("--round");
+  const roundValue =
+    roundFlag >= 0 ? parseInt(args[roundFlag + 1], 10) : undefined;
+  const totalRoundsFlag = args.indexOf("--total-rounds");
+  const totalRoundsValue =
+    totalRoundsFlag >= 0
+      ? parseInt(args[totalRoundsFlag + 1], 10)
+      : undefined;
   const noColor = args.includes("--no-color");
   const dynamicRatings = args.includes("--dynamic-ratings");
   const teamSpecs = args
@@ -287,6 +298,10 @@ function parseGameArgs(args: string[]): {
         (seedFlag < 0 || index !== seedFlag + 1) &&
         value !== "--trials" &&
         (trialsFlag < 0 || index !== trialsFlag + 1) &&
+        value !== "--round" &&
+        (roundFlag < 0 || index !== roundFlag + 1) &&
+        value !== "--total-rounds" &&
+        (totalRoundsFlag < 0 || index !== totalRoundsFlag + 1) &&
         value !== "--no-color" &&
         value !== "--dynamic-ratings"
     )
@@ -299,6 +314,14 @@ function parseGameArgs(args: string[]): {
     seed: seedValue !== undefined && !Number.isNaN(seedValue) ? seedValue : undefined,
     trials:
       trialsFlag >= 0 && Number.isNaN(trialsValue) ? 0 : trialsValue,
+    round:
+      roundValue !== undefined && !Number.isNaN(roundValue)
+        ? roundValue
+        : undefined,
+    totalRounds:
+      totalRoundsValue !== undefined && !Number.isNaN(totalRoundsValue)
+        ? totalRoundsValue
+        : undefined,
   };
 }
 
@@ -363,10 +386,31 @@ export function runCli(args: string[]): void {
     }
 
     case "game": {
-      const { teamSpecs, color, dynamicRatings, seed, trials } = parseGameArgs(args);
+      const {
+        teamSpecs,
+        color,
+        dynamicRatings,
+        seed,
+        trials,
+        round,
+        totalRounds,
+      } = parseGameArgs(args);
       if (teamSpecs.length !== 2 || trials <= 0) {
         console.error(
-          "Usage: bracketmind game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--no-color]"
+          "Usage: bracketmind game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--round N] [--total-rounds N] [--no-color]"
+        );
+        process.exit(1);
+      }
+
+      const roundContext = resolveSimulationRoundContext(round, totalRounds);
+      if (
+        roundContext &&
+        (roundContext.round < 0 ||
+          roundContext.totalRounds < 1 ||
+          roundContext.round >= roundContext.totalRounds)
+      ) {
+        console.error(
+          "Round context must satisfy 0 <= --round < --total-rounds (or inferred total rounds)."
         );
         process.exit(1);
       }
@@ -386,15 +430,23 @@ export function runCli(args: string[]): void {
       const simulationOptions = {
         rng,
         tournamentState,
+        ...roundContext,
+      };
+      const renderOptions = {
+        ...color,
+        showRatingDeltas: dynamicRatings,
+        ...roundContext,
       };
 
       if (trials > 1) {
         const forecast = monteCarloGameOutcomes(teamA, teamB, trials, simulationOptions);
 
-        for (const line of renderGameResult(teamA, teamB, forecast.sampleResult, {
-          ...color,
-          showRatingDeltas: dynamicRatings,
-        })) {
+        for (const line of renderGameResult(
+          teamA,
+          teamB,
+          forecast.sampleResult,
+          renderOptions
+        )) {
           console.log(line);
         }
 
@@ -406,10 +458,7 @@ export function runCli(args: string[]): void {
 
       const result = simulateGame(teamA, teamB, simulationOptions);
 
-      for (const line of renderGameResult(teamA, teamB, result, {
-        ...color,
-        showRatingDeltas: dynamicRatings,
-      })) {
+      for (const line of renderGameResult(teamA, teamB, result, renderOptions)) {
         console.log(line);
       }
       break;
@@ -652,7 +701,8 @@ export function runCli(args: string[]): void {
       console.log(`bracketmind — tournament bracket simulator
 
 Commands:
-  game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--no-color]
+  game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings]
+       [--round N] [--total-rounds N] [--no-color]
                                    Simulate a single head-to-head game
   simulate <teams...> [--format list|tree] [--dynamic-ratings] [--no-color]
                                    Run a single bracket simulation
@@ -688,6 +738,7 @@ Team names may include ratings as Name:rating (e.g. Duke:1650).
 Examples:
   bracketmind game Duke:1650 Kansas:1500 --seed 42
   bracketmind game Duke:1650 Kansas:1500 --trials 5000 --seed 42
+  bracketmind game Duke:1650 Kansas:1500 --dynamic-ratings --round 3 --total-rounds 4
   bracketmind simulate Duke Kansas UConn Purdue --format tree
   bracketmind predict Duke Kansas UConn --iterations 5000
   bracketmind seedings Duke:1650 Kansas:1600 UConn:1550 Purdue:1500

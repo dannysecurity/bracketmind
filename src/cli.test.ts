@@ -139,6 +139,64 @@ describe("runCli", () => {
     expect(stderr).toContain("Usage:");
   });
 
+  it("applies round-aware rating deltas with --round and --total-rounds", () => {
+    const early = captureOutput(() => {
+      runCli([
+        "game",
+        "Alpha:1500",
+        "Beta:1500",
+        "--seed",
+        "99",
+        "--dynamic-ratings",
+        "--round",
+        "0",
+        "--total-rounds",
+        "4",
+        "--no-color",
+      ]);
+    });
+    const late = captureOutput(() => {
+      runCli([
+        "game",
+        "Alpha:1500",
+        "Beta:1500",
+        "--seed",
+        "99",
+        "--dynamic-ratings",
+        "--round",
+        "3",
+        "--total-rounds",
+        "4",
+        "--no-color",
+      ]);
+    });
+
+    expect(early.stdout).toContain("Round context: Round of 16");
+    expect(late.stdout).toContain("Round context: Final");
+
+    const earlyDelta = early.stdout.match(/Rating change: Alpha \+(\d+)/)?.[1];
+    const lateDelta = late.stdout.match(/Rating change: Alpha \+(\d+)/)?.[1];
+    expect(Number(lateDelta)).toBeGreaterThan(Number(earlyDelta));
+  });
+
+  it("exits when round context is out of range", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli([
+        "game",
+        "Alpha",
+        "Beta",
+        "--round",
+        "4",
+        "--total-rounds",
+        "4",
+        "--no-color",
+      ]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Round context must satisfy");
+  });
+
   it("prints seedings and round-one upset probabilities", () => {
     const { stdout } = captureOutput(() => {
       runCli([

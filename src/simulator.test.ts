@@ -5,6 +5,7 @@ import {
   createSeededRng,
   createTournamentState,
   monteCarloGameOutcomes,
+  resolveSimulationRoundContext,
   wilsonScoreInterval,
 } from "./simulator.js";
 import { countingRng } from "./testing/simulationFixtures.js";
@@ -18,6 +19,33 @@ function sequenceRng(values: number[]): () => number {
   let index = 0;
   return () => values[index++ % values.length];
 }
+
+describe("resolveSimulationRoundContext", () => {
+  it("returns undefined when no round flags are provided", () => {
+    expect(resolveSimulationRoundContext()).toBeUndefined();
+  });
+
+  it("defaults total rounds to four when only round is given", () => {
+    expect(resolveSimulationRoundContext(2)).toEqual({
+      round: 2,
+      totalRounds: 4,
+    });
+  });
+
+  it("treats the championship round when only total rounds is given", () => {
+    expect(resolveSimulationRoundContext(undefined, 3)).toEqual({
+      round: 2,
+      totalRounds: 3,
+    });
+  });
+
+  it("passes through explicit round and total rounds", () => {
+    expect(resolveSimulationRoundContext(1, 5)).toEqual({
+      round: 1,
+      totalRounds: 5,
+    });
+  });
+});
 
 describe("createSeededRng", () => {
   it("produces repeatable sequences for the same seed", () => {
