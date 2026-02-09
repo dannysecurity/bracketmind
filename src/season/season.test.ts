@@ -232,6 +232,7 @@ describe("round-trip fixture integrity", () => {
   it("preserves JSON fixtures through parse and stringify", () => {
     for (const file of [
       "2023-east-mini.json",
+      "2023-south-region.json",
       "2024-east-mini.json",
       "2023-midwest-final-four.json",
       "2024-title-game.json",

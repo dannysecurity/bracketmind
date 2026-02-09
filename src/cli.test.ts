@@ -386,4 +386,21 @@ describe("runCli", () => {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
+
+  it("dry-runs batch importing season fixtures from a directory", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "import",
+        "add-dir",
+        "fixtures/seasons",
+        "--dry-run",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Historical Season Batch Import");
+    expect(stdout).toContain("Would import:");
+    expect(stdout).toContain("2023-south-region");
+    expect(stdout).toContain("Re-run without --dry-run");
+  });
 });

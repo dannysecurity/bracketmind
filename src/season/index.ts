@@ -61,4 +61,11 @@ export {
   type ImportSeasonFixtureOptions,
   type WriteSeasonFixtureOptions,
 } from "./writeFixture.js";
+export {
+  discoverSeasonFixtureFiles,
+  importSeasonBatchFromDirectory,
+  type ImportSeasonBatchOptions,
+  type ImportSeasonBatchResult,
+  type SeasonFixtureImportResult,
+} from "./importBatch.js";
 export { Season } from "../models/season.js";

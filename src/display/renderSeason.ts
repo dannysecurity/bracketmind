@@ -1,8 +1,10 @@
+import { basename } from "node:path";
 import type { ColorOptions } from "./colors.js";
 import { dim, heading } from "./colors.js";
 import type { SeasonGameUpsetAnalysis } from "../season/analyzeUpsets.js";
 import type { SeasonPredictionComparison } from "../season/comparePredictions.js";
 import type { FixtureCatalogEntry } from "../season/fixtureCatalog.js";
+import type { ImportSeasonBatchResult } from "../season/importBatch.js";
 import type { SeasonRatingDelta } from "../season/replayRatings.js";
 import type { SeasonSummary } from "../season/summarizeSeason.js";
 import type { SeasonDocument } from "../season/types.js";
@@ -179,6 +181,59 @@ export function renderSeasonFixtureImport(
     lines.push("");
     lines.push(
       dim(`View imported bracket: bracketmind import season @${doc.id}`, color)
+    );
+  }
+
+  return lines;
+}
+
+export function renderSeasonBatchImport(
+  batch: ImportSeasonBatchResult,
+  options: { dryRun: boolean },
+  color: ColorOptions = { enabled: false }
+): string[] {
+  const action = options.dryRun ? "Would import" : "Imported";
+  const lines = [
+    heading("Historical Season Batch Import", color),
+    `${batch.inputDir}`,
+    "",
+    `${action}: ${batch.imported} · Skipped: ${batch.skipped} · Failed: ${batch.failed}`,
+    "",
+  ];
+
+  for (const entry of batch.results) {
+    const label = entry.doc?.id ?? basename(entry.inputPath);
+    switch (entry.status) {
+      case "imported":
+      case "dry-run": {
+        const champion = entry.summary?.championName
+          ? ` · ★ ${entry.summary.championName}`
+          : "";
+        lines.push(`  ✓ ${label}${champion}`);
+        if (entry.outputPath) {
+          lines.push(dim(`    → ${entry.outputPath}`, color));
+        }
+        break;
+      }
+      case "skipped":
+        lines.push(`  ○ ${label} (already exists)`);
+        if (entry.outputPath) {
+          lines.push(dim(`    → ${entry.outputPath}`, color));
+        }
+        break;
+      case "failed":
+        lines.push(`  ✗ ${basename(entry.inputPath)}`);
+        if (entry.error) {
+          lines.push(dim(`    ${entry.error}`, color));
+        }
+        break;
+    }
+  }
+
+  if (options.dryRun && batch.imported > 0) {
+    lines.push("");
+    lines.push(
+      dim("Re-run without --dry-run to write fixtures to disk.", color)
     );
   }
 

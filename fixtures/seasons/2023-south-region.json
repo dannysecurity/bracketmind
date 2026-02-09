@@ -1,0 +1,160 @@
+{
+  "id": "2023-south-region",
+  "name": "2023 NCAA South Region",
+  "year": 2023,
+  "teams": [
+    { "id": "alabama", "name": "Alabama", "seed": 1, "rating": 1725 },
+    { "id": "arizona", "name": "Arizona", "seed": 2, "rating": 1700 },
+    { "id": "baylor", "name": "Baylor", "seed": 3, "rating": 1685 },
+    { "id": "virginia", "name": "Virginia", "seed": 4, "rating": 1670 },
+    { "id": "sdsu", "name": "San Diego State", "seed": 5, "rating": 1640 },
+    { "id": "creighton", "name": "Creighton", "seed": 6, "rating": 1625 },
+    { "id": "missouri", "name": "Missouri", "seed": 7, "rating": 1605 },
+    { "id": "maryland", "name": "Maryland", "seed": 8, "rating": 1590 },
+    { "id": "wvu", "name": "West Virginia", "seed": 9, "rating": 1575 },
+    { "id": "utah-state", "name": "Utah State", "seed": 10, "rating": 1560 },
+    { "id": "nc-state", "name": "NC State", "seed": 11, "rating": 1545 },
+    { "id": "charleston", "name": "Charleston", "seed": 12, "rating": 1520 },
+    { "id": "furman", "name": "Furman", "seed": 13, "rating": 1495 },
+    { "id": "ucsb", "name": "UC Santa Barbara", "seed": 14, "rating": 1480 },
+    { "id": "princeton", "name": "Princeton", "seed": 15, "rating": 1465 },
+    { "id": "tamucc", "name": "Texas A&M-Corpus Christi", "seed": 16, "rating": 1420 }
+  ],
+  "games": [
+    {
+      "round": 0,
+      "slot": 0,
+      "teamAId": "alabama",
+      "teamBId": "tamucc",
+      "scoreA": 96,
+      "scoreB": 75,
+      "winnerId": "alabama"
+    },
+    {
+      "round": 0,
+      "slot": 1,
+      "teamAId": "maryland",
+      "teamBId": "wvu",
+      "scoreA": 67,
+      "scoreB": 65,
+      "winnerId": "maryland"
+    },
+    {
+      "round": 0,
+      "slot": 2,
+      "teamAId": "virginia",
+      "teamBId": "furman",
+      "scoreA": 67,
+      "scoreB": 68,
+      "winnerId": "furman"
+    },
+    {
+      "round": 0,
+      "slot": 3,
+      "teamAId": "sdsu",
+      "teamBId": "charleston",
+      "scoreA": 63,
+      "scoreB": 57,
+      "winnerId": "sdsu"
+    },
+    {
+      "round": 0,
+      "slot": 4,
+      "teamAId": "arizona",
+      "teamBId": "princeton",
+      "scoreA": 55,
+      "scoreB": 59,
+      "winnerId": "princeton"
+    },
+    {
+      "round": 0,
+      "slot": 5,
+      "teamAId": "missouri",
+      "teamBId": "utah-state",
+      "scoreA": 76,
+      "scoreB": 65,
+      "winnerId": "missouri"
+    },
+    {
+      "round": 0,
+      "slot": 6,
+      "teamAId": "baylor",
+      "teamBId": "ucsb",
+      "scoreA": 74,
+      "scoreB": 56,
+      "winnerId": "baylor"
+    },
+    {
+      "round": 0,
+      "slot": 7,
+      "teamAId": "creighton",
+      "teamBId": "nc-state",
+      "scoreA": 72,
+      "scoreB": 63,
+      "winnerId": "creighton"
+    },
+    {
+      "round": 1,
+      "slot": 0,
+      "teamAId": "alabama",
+      "teamBId": "maryland",
+      "scoreA": 73,
+      "scoreB": 51,
+      "winnerId": "alabama"
+    },
+    {
+      "round": 1,
+      "slot": 1,
+      "teamAId": "furman",
+      "teamBId": "sdsu",
+      "scoreA": 52,
+      "scoreB": 75,
+      "winnerId": "sdsu"
+    },
+    {
+      "round": 1,
+      "slot": 2,
+      "teamAId": "princeton",
+      "teamBId": "missouri",
+      "scoreA": 78,
+      "scoreB": 63,
+      "winnerId": "princeton"
+    },
+    {
+      "round": 1,
+      "slot": 3,
+      "teamAId": "baylor",
+      "teamBId": "creighton",
+      "scoreA": 76,
+      "scoreB": 85,
+      "winnerId": "creighton"
+    },
+    {
+      "round": 2,
+      "slot": 0,
+      "teamAId": "alabama",
+      "teamBId": "sdsu",
+      "scoreA": 64,
+      "scoreB": 71,
+      "winnerId": "sdsu"
+    },
+    {
+      "round": 2,
+      "slot": 1,
+      "teamAId": "princeton",
+      "teamBId": "creighton",
+      "scoreA": 75,
+      "scoreB": 86,
+      "winnerId": "creighton"
+    },
+    {
+      "round": 3,
+      "slot": 0,
+      "teamAId": "sdsu",
+      "teamBId": "creighton",
+      "scoreA": 57,
+      "scoreB": 56,
+      "winnerId": "sdsu"
+    }
+  ]
+}
