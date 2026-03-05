@@ -227,6 +227,33 @@ describe("simulateGame", () => {
     expect(result.scoreA).toBe(55 + projectedMargin);
   });
 
+  it("defaults totalRounds to four when only round is provided with tournament state", () => {
+    const rolls = [0.01, 0.5, 0.5];
+
+    const earlyA = team("EarlyA", 1500);
+    const earlyB = team("EarlyB", 1500);
+    const earlyState = createTournamentState([earlyA, earlyB]);
+    simulateGame(earlyA, earlyB, {
+      rng: sequenceRng(rolls),
+      tournamentState: earlyState,
+      round: 0,
+      totalRounds: 4,
+    });
+    const earlyGain = earlyA.rating - 1500;
+
+    const lateA = team("LateA", 1500);
+    const lateB = team("LateB", 1500);
+    const lateState = createTournamentState([lateA, lateB]);
+    simulateGame(lateA, lateB, {
+      rng: sequenceRng(rolls),
+      tournamentState: lateState,
+      round: 3,
+    });
+    const lateGain = lateA.rating - 1500;
+
+    expect(lateGain).toBeGreaterThan(earlyGain);
+  });
+
   it("updates tournament ratings when state is provided", () => {
     const teamA = team("TeamA", 1500);
     const teamB = team("TeamB", 1500);

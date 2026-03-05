@@ -133,6 +133,10 @@ export function simulateGame(
   let ratingDeltaB: number | undefined;
 
   if (options.tournamentState) {
+    const roundContext = resolveSimulationRoundContext(
+      options.round,
+      options.totalRounds
+    );
     const deltas = recordGameResult(
       options.tournamentState,
       teamA,
@@ -140,8 +144,7 @@ export function simulateGame(
       scoreA,
       scoreB,
       {
-        round: options.round,
-        totalRounds: options.totalRounds,
+        ...roundContext,
         margin,
         isUpset,
       },
