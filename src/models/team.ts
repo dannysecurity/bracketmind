@@ -40,6 +40,13 @@ export function toRuntimeTeam(entry: SeededTeam): Team {
   };
 }
 
+/** Collect team ids from any collection of id-bearing entries. */
+export function teamIdsOf(
+  teams: readonly { id: TeamId }[]
+): ReadonlySet<TeamId> {
+  return new Set(teams.map((team) => team.id));
+}
+
 /** Map a runtime team to a persisted entry when an official seed is known. */
 export function toSeededTeam(team: Team): SeededTeam | undefined {
   if (team.seed == null) {

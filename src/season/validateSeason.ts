@@ -1,5 +1,6 @@
 import type { RecordedGame, SeededTeam } from "../models/index.js";
 import { validateRecordedGames } from "../models/gameValidation.js";
+import { teamIdsOf } from "../models/team.js";
 import { validateSeededTeams } from "../models/teamValidation.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -83,11 +84,7 @@ export function validateSeasonDocument(raw: unknown): {
   doc.games = raw.games.map(parseGame);
 
   validateSeededTeams(doc.teams);
-  validateRecordedGames(
-    doc.games,
-    new Set(doc.teams.map((team) => team.id)),
-    doc.teams.length
-  );
+  validateRecordedGames(doc.games, teamIdsOf(doc.teams), doc.teams.length);
 
   return doc;
 }

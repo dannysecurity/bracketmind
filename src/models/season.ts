@@ -6,6 +6,7 @@ import { GameCatalog } from "./gameCatalog.js";
 import type { RecordedGame } from "./game.js";
 import { TeamRegistry } from "./registry.js";
 import type { SeededTeam, Team } from "./team.js";
+import { teamIdsOf } from "./team.js";
 import { validateSeededTeams } from "./teamValidation.js";
 
 /** Metadata and indexed team/game collections for a tournament season. */
@@ -42,8 +43,7 @@ export class Season {
     games: readonly RecordedGame[];
   }): Season {
     validateSeededTeams(doc.teams);
-    const teamIds = new Set(doc.teams.map((team) => team.id));
-    validateRecordedGames(doc.games, teamIds, doc.teams.length);
+    validateRecordedGames(doc.games, teamIdsOf(doc.teams), doc.teams.length);
     const registry = TeamRegistry.fromSeededTeams(doc.teams);
     const catalog = GameCatalog.fromGames(doc.games);
 

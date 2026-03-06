@@ -1,12 +1,17 @@
 export type {
   BracketSlot,
+  GameParticipants,
   GameResult,
   RecordedGame,
 } from "./game.js";
 export {
   bracketSlotKey,
   bracketSlotOf,
+  gameParticipantsOf,
+  isWinnerTeamA,
   sameBracketSlot,
+  validateGameResult,
+  winnerAndLoserScores,
 } from "./game.js";
 export {
   bracketGeometryForTeamCount,
@@ -54,6 +59,7 @@ export type {
 } from "./team.js";
 export {
   isByeTeam,
+  teamIdsOf,
   toRuntimeTeam,
   toSeededTeam,
 } from "./team.js";

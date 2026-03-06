@@ -1,4 +1,5 @@
 import type { RecordedGame } from "./game.js";
+import { validateGameResult } from "./game.js";
 import type { TeamId } from "./team.js";
 
 /** Bracket geometry implied by a team count (power-of-two field). */
@@ -42,25 +43,10 @@ export function validateRecordedGames(
       }
     }
 
-    if (game.winnerId !== game.teamAId && game.winnerId !== game.teamBId) {
-      throw new Error(
-        `Winner "${game.winnerId}" must be teamA or teamB in round ${game.round}, slot ${game.slot}`
-      );
-    }
-
-    const winnerScore = game.winnerId === game.teamAId ? game.scoreA : game.scoreB;
-    const loserScore = game.winnerId === game.teamAId ? game.scoreB : game.scoreA;
-
-    if (winnerScore <= loserScore) {
-      throw new Error(
-        `Winner must outscore the loser in round ${game.round}, slot ${game.slot}`
-      );
-    }
-
-    if (game.scoreA < 0 || game.scoreB < 0) {
-      throw new Error(
-        `Scores must be non-negative in round ${game.round}, slot ${game.slot}`
-      );
-    }
+    validateGameResult(
+      game,
+      game,
+      `round ${game.round}, slot ${game.slot}`
+    );
   }
 }

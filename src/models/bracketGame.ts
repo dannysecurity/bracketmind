@@ -4,7 +4,7 @@ import {
   type CompletedMatch,
   type Match,
 } from "./match.js";
-import type { Team } from "./team.js";
+import type { Team, TeamId } from "./team.js";
 
 export { isCompletedMatch } from "./match.js";
 export type { CompletedMatch, ReadyMatch } from "./match.js";
@@ -64,7 +64,7 @@ export function recordedGamesFromBracket(
 export function resolveWinner(
   teamA: Team,
   teamB: Team,
-  winnerId: string
+  winnerId: TeamId
 ): Team {
   if (winnerId === teamA.id) {
     return teamA;

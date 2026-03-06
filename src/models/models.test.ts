@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   bracketSlotKey,
   bracketSlotOf,
+  gameParticipantsOf,
+  isWinnerTeamA,
   sameBracketSlot,
+  validateGameResult,
+  winnerAndLoserScores,
 } from "./game.js";
 import { isCompletedMatch, isReadyMatch, matchBracketSlot } from "./match.js";
 import {
   isByeTeam,
+  teamIdsOf,
   toRuntimeTeam,
   toSeededTeam,
   type SeededTeam,
@@ -49,6 +54,12 @@ describe("team model conversions", () => {
     expect(isByeTeam({ id: "a", name: "Alpha", rating: 1500 })).toBe(false);
     expect(isByeTeam(null)).toBe(false);
   });
+
+  it("collects team ids from seeded entries", () => {
+    expect(teamIdsOf([uconn, { id: "purdue", name: "Purdue", seed: 2, rating: 1680 }])).toEqual(
+      new Set(["uconn", "purdue"])
+    );
+  });
 });
 
 describe("bracket slot helpers", () => {
@@ -69,6 +80,20 @@ describe("bracket slot helpers", () => {
     expect(bracketSlotOf({ round: 3, slot: 0 })).toEqual({ round: 3, slot: 0 });
   });
 
+  it("extracts participant ids from recorded games", () => {
+    const game = {
+      round: 0,
+      slot: 1,
+      teamAId: "a",
+      teamBId: "b",
+      scoreA: 70,
+      scoreB: 65,
+      winnerId: "a",
+    };
+
+    expect(gameParticipantsOf(game)).toEqual({ teamAId: "a", teamBId: "b" });
+  });
+
   it("extracts bracket coordinates from a match", () => {
     expect(
       matchBracketSlot({
@@ -80,6 +105,70 @@ describe("bracket slot helpers", () => {
         winner: null,
       })
     ).toEqual({ round: 1, slot: 0 });
+  });
+});
+
+describe("game result helpers", () => {
+  const participants = { teamAId: "a", teamBId: "b" };
+
+  it("identifies when team A won", () => {
+    expect(
+      isWinnerTeamA({ ...participants, scoreA: 72, scoreB: 65, winnerId: "a" })
+    ).toBe(true);
+    expect(
+      isWinnerTeamA({ ...participants, scoreA: 65, scoreB: 72, winnerId: "b" })
+    ).toBe(false);
+  });
+
+  it("aligns winner and loser scores with the declared winner", () => {
+    expect(
+      winnerAndLoserScores({
+        ...participants,
+        scoreA: 72,
+        scoreB: 65,
+        winnerId: "a",
+      })
+    ).toEqual({ winnerScore: 72, loserScore: 65 });
+
+    expect(
+      winnerAndLoserScores({
+        ...participants,
+        scoreA: 65,
+        scoreB: 72,
+        winnerId: "b",
+      })
+    ).toEqual({ winnerScore: 72, loserScore: 65 });
+  });
+
+  it("validates consistent scores and winner ids", () => {
+    expect(() =>
+      validateGameResult(
+        { scoreA: 72, scoreB: 65, winnerId: "a" },
+        participants
+      )
+    ).not.toThrow();
+
+    expect(() =>
+      validateGameResult(
+        { scoreA: 65, scoreB: 72, winnerId: "a" },
+        participants,
+        "round 0, slot 0"
+      )
+    ).toThrow(/outscore.*round 0, slot 0/);
+
+    expect(() =>
+      validateGameResult(
+        { scoreA: 70, scoreB: 68, winnerId: "ghost" },
+        participants
+      )
+    ).toThrow(/must be teamA or teamB/);
+
+    expect(() =>
+      validateGameResult(
+        { scoreA: -1, scoreB: 70, winnerId: "a" },
+        participants
+      )
+    ).toThrow(/non-negative/);
   });
 });
 

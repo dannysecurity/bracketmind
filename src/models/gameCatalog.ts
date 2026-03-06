@@ -1,5 +1,5 @@
 import type { BracketSlot, RecordedGame } from "./game.js";
-import { bracketSlotKey } from "./game.js";
+import { bracketSlotKey, isWinnerTeamA } from "./game.js";
 import type { TeamRegistry } from "./registry.js";
 import type { Team, TeamId } from "./team.js";
 
@@ -34,7 +34,7 @@ export function resolveGameOutcome(
   const teamA = registry.require(game.teamAId);
   const teamB = registry.require(game.teamBId);
   const winner = registry.require(game.winnerId);
-  const winnerIsA = game.winnerId === game.teamAId;
+  const winnerIsA = isWinnerTeamA(game);
   const loserId = winnerIsA ? game.teamBId : game.teamAId;
 
   return {
