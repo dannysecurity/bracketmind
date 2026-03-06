@@ -59,8 +59,7 @@ describe("ratings", () => {
 
   it("tracks games played and applies team-specific K factors", () => {
     const provisional = createTeamRating(1500);
-    const established = createTeamRating(1500);
-    established.gamesPlayed = 40;
+    const established = createTeamRating(1500, { gamesPlayed: 40 });
 
     const [newProvisional, newEstablished] = updateTeamRatings(
       provisional,
@@ -71,9 +70,7 @@ describe("ratings", () => {
 
     expect(newProvisional.gamesPlayed).toBe(1);
     expect(newEstablished.gamesPlayed).toBe(41);
-    expect(newProvisional.rating - provisional.rating).toBeGreaterThan(
-      newEstablished.rating - established.rating
-    );
+    expect(newProvisional.lastDelta).toBeGreaterThan(newEstablished.lastDelta);
   });
 
   it("projects wider margins for strong favorites than for upsets", () => {

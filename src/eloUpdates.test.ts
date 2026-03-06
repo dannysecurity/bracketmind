@@ -73,6 +73,17 @@ describe("contextualKFactor", () => {
     const late = contextualKFactor(team, gameContext({ round: 3, totalRounds: 4 }));
     expect(late).toBeGreaterThan(early);
   });
+
+  it("dampens K for teams with low rating deviation", () => {
+    const uncertain = createTeamRating(1500);
+    const confident = createTeamRating(1500, { gamesPlayed: 40 });
+    const context = gameContext({ round: 0, totalRounds: 3 });
+
+    const uncertainK = contextualKFactor(uncertain, context);
+    const confidentK = contextualKFactor(confident, context);
+
+    expect(uncertainK).toBeGreaterThan(confidentK);
+  });
 });
 
 describe("computeActualScores", () => {

@@ -3,8 +3,12 @@ import {
   expectedMarginFromRatings,
   expectedScore,
   kFactorForTeam,
-  type TeamRating,
 } from "./ratings.js";
+import {
+  applyRatingUpdate,
+  confidenceKMultiplier,
+  type TeamRating,
+} from "./models/teamRating.js";
 import {
   defaultRatingModel,
   type RatingModel,
@@ -62,7 +66,7 @@ export function roundKMultiplier(
   return model.roundKMin + model.roundKRange * progress;
 }
 
-/** Combine provisional K with round-based scaling. */
+/** Combine provisional K with round-based scaling and rating-confidence weighting. */
 export function contextualKFactor(
   team: TeamRating,
   context: GameRatingContext,
@@ -73,8 +77,11 @@ export function contextualKFactor(
     model.baseKFactor,
     model
   );
+  const confidence = confidenceKMultiplier(team.ratingDeviation, model);
   return Math.round(
-    provisional * roundKMultiplier(context.round, context.totalRounds, model)
+    provisional *
+      roundKMultiplier(context.round, context.totalRounds, model) *
+      confidence
   );
 }
 
@@ -192,7 +199,7 @@ export function updateTeamRatingsWithContext(
   );
 
   return [
-    { rating: newRatingA, gamesPlayed: teamA.gamesPlayed + 1 },
-    { rating: newRatingB, gamesPlayed: teamB.gamesPlayed + 1 },
+    applyRatingUpdate(teamA, newRatingA, model),
+    applyRatingUpdate(teamB, newRatingB, model),
   ];
 }

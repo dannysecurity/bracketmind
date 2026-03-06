@@ -2,6 +2,14 @@ import {
   defaultRatingModel,
   type RatingModel,
 } from "./ratingsModel.js";
+import {
+  applyRatingUpdate,
+  createTeamRating,
+  type TeamRating,
+} from "./models/teamRating.js";
+
+export type { TeamRating } from "./models/teamRating.js";
+export { createTeamRating } from "./models/teamRating.js";
 
 const DEFAULT_RATING = 1500;
 /** Base K used for standard and contextual Elo updates. */
@@ -22,17 +30,8 @@ export function expectedMarginFromRatings(
   return Math.max(1, Math.round(base));
 }
 
-export interface TeamRating {
-  rating: number;
-  gamesPlayed: number;
-}
-
 export function createRating(value = DEFAULT_RATING): number {
   return value;
-}
-
-export function createTeamRating(rating = DEFAULT_RATING): TeamRating {
-  return { rating, gamesPlayed: 0 };
 }
 
 /** Provisional teams get a higher K; established teams move more slowly. */
@@ -108,9 +107,10 @@ export function updateTeamRatings(
   teamA: TeamRating,
   teamB: TeamRating,
   scoreA: number,
-  scoreB: number
+  scoreB: number,
+  model: RatingModel = defaultRatingModel()
 ): [TeamRating, TeamRating] {
-  const k = (kFactorForTeam(teamA.gamesPlayed) + kFactorForTeam(teamB.gamesPlayed)) / 2;
+  const k = (kFactorForTeam(teamA.gamesPlayed, DEFAULT_K_FACTOR, model) + kFactorForTeam(teamB.gamesPlayed, DEFAULT_K_FACTOR, model)) / 2;
   const [newRatingA, newRatingB] = updateRatings(
     teamA.rating,
     teamB.rating,
@@ -120,7 +120,7 @@ export function updateTeamRatings(
   );
 
   return [
-    { rating: newRatingA, gamesPlayed: teamA.gamesPlayed + 1 },
-    { rating: newRatingB, gamesPlayed: teamB.gamesPlayed + 1 },
+    applyRatingUpdate(teamA, newRatingA, model),
+    applyRatingUpdate(teamB, newRatingB, model),
   ];
 }

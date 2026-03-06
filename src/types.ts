@@ -1,4 +1,4 @@
-import type { TeamRating } from "./ratings.js";
+import type { TeamRating } from "./models/teamRating.js";
 import type { RatingModel } from "./ratingsModel.js";
 import type { Team } from "./models/index.js";
 

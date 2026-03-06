@@ -4,6 +4,7 @@ import {
   effectiveRating,
   recordGameResult,
 } from "./tournamentState.js";
+import { createTeamRating, withPriorGamesPlayed } from "./models/teamRating.js";
 import type { Team } from "./types.js";
 
 function team(name: string, rating: number): Team {
@@ -21,6 +22,7 @@ describe("createTournamentState", () => {
     expect(state.ratings.size).toBe(2);
     expect(state.ratings.get("alpha")?.rating).toBe(1600);
     expect(state.ratings.get("beta")?.gamesPlayed).toBe(0);
+    expect(state.ratings.get("alpha")?.ratingDeviation).toBeGreaterThan(0);
   });
 });
 
@@ -57,6 +59,10 @@ describe("recordGameResult", () => {
     expect(state.ratings.get("teamb")?.gamesPlayed).toBe(1);
     expect(teamA.rating).toBe(state.ratings.get("teama")?.rating);
     expect(teamB.rating).toBe(state.ratings.get("teamb")?.rating);
+    expect(state.ratings.get("teama")?.lastDelta).toBe(ratingDeltaA);
+    expect(state.ratings.get("teama")?.peakRating).toBeGreaterThanOrEqual(
+      teamA.rating
+    );
   });
 
   it("boosts provisional teams more than established opponents", () => {
@@ -71,10 +77,10 @@ describe("recordGameResult", () => {
     const established = team("Established", 1500);
     const opponentB = team("OpponentB", 1500);
     const establishedState = createTournamentState([established, opponentB]);
-    establishedState.ratings.set("established", {
-      rating: 1500,
-      gamesPlayed: 40,
-    });
+    establishedState.ratings.set(
+      "established",
+      withPriorGamesPlayed(createTeamRating(1500), 40)
+    );
     recordGameResult(establishedState, established, opponentB, 90, 60, {
       margin: 30,
     });

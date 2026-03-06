@@ -1,6 +1,7 @@
 import { simulateGame } from "./simulator.js";
 import { createTournamentState } from "./tournamentState.js";
 import { createRating } from "./ratings.js";
+import { withPriorGamesPlayed } from "./models/teamRating.js";
 import { matchIndex } from "./bracket/layout.js";
 import { advanceWinner } from "./domain/advanceWinner.js";
 import { buildBracket } from "./domain/buildBracket.js";
@@ -24,10 +25,14 @@ export function simulateBracket(
     : undefined;
 
   if (tournamentState && options.priorGamesPlayed) {
+    const model = options.ratingModel;
     for (const [teamId, gamesPlayed] of options.priorGamesPlayed) {
       const entry = tournamentState.ratings.get(teamId);
       if (entry) {
-        entry.gamesPlayed = gamesPlayed;
+        tournamentState.ratings.set(
+          teamId,
+          withPriorGamesPlayed(entry, gamesPlayed, model)
+        );
       }
     }
   }

@@ -2,7 +2,8 @@ import {
   updateTeamRatingsWithContext,
   type GameRatingContext,
 } from "./eloUpdates.js";
-import { createTeamRating, isRatingUpset, type TeamRating } from "./ratings.js";
+import { createTeamRating, isRatingUpset } from "./ratings.js";
+import type { TeamRating } from "./models/teamRating.js";
 import { defaultRatingModel, type RatingModel } from "./ratingsModel.js";
 import type { Team, TournamentState } from "./types.js";
 import { isByeTeam } from "./types.js";

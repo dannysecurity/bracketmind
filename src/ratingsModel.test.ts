@@ -33,6 +33,11 @@ describe("defaultRatingModel", () => {
       establishedKMultiplier: 0.8,
       roundKMin: 0.9,
       roundKRange: 0.3,
+      initialRatingDeviation: 110,
+      minRatingDeviation: 50,
+      rdDecayPerGame: 3,
+      rdKMin: 0.92,
+      rdKRange: 0.08,
     });
   });
 });

@@ -26,6 +26,16 @@ export interface RatingModel {
   roundKMin: number;
   /** Additional round K multiplier added by the championship round. */
   roundKRange: number;
+  /** Starting rating deviation for teams with no game history. */
+  initialRatingDeviation: number;
+  /** Floor rating deviation for teams with extensive history. */
+  minRatingDeviation: number;
+  /** Rating deviation removed per completed game. */
+  rdDecayPerGame: number;
+  /** K multiplier at minimum rating deviation. */
+  rdKMin: number;
+  /** Additional K multiplier at maximum rating deviation. */
+  rdKRange: number;
 }
 
 /** Production defaults matching pre-model behavior. */
@@ -41,6 +51,11 @@ export function defaultRatingModel(): RatingModel {
     establishedKMultiplier: 0.8,
     roundKMin: 0.9,
     roundKRange: 0.3,
+    initialRatingDeviation: 110,
+    minRatingDeviation: 50,
+    rdDecayPerGame: 3,
+    rdKMin: 0.92,
+    rdKRange: 0.08,
   };
 }
 

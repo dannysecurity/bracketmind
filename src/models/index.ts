@@ -63,6 +63,18 @@ export {
   toRuntimeTeam,
   toSeededTeam,
 } from "./team.js";
+export type {
+  CreateTeamRatingOptions,
+  TeamRating,
+} from "./teamRating.js";
+export {
+  applyRatingUpdate,
+  confidenceKMultiplier,
+  createTeamRating,
+  isProvisionalTeamRating,
+  ratingDeviationAfterGames,
+  withPriorGamesPlayed,
+} from "./teamRating.js";
 export {
   validateConsecutiveSeeds,
   validateSeededTeams,
