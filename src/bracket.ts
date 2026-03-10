@@ -71,6 +71,10 @@ export function simulateBracket(
     }
   }
 
+  if (tournamentState && options.onTournamentState) {
+    options.onTournamentState(tournamentState);
+  }
+
   return working;
 }
 

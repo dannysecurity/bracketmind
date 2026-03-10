@@ -56,6 +56,11 @@ export interface BracketSimulationOptions {
    * Useful for teams entering with prior-season history (provisional vs established K).
    */
   priorGamesPlayed?: ReadonlyMap<string, number>;
+  /**
+   * Receives live tournament state after simulation when dynamicRatings is enabled.
+   * Useful for tests and diagnostics that inspect games-played bookkeeping.
+   */
+  onTournamentState?: (state: TournamentState) => void;
 }
 
 /** Margin distribution percentiles from repeated head-to-head simulations. */

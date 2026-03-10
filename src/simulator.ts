@@ -222,7 +222,12 @@ export function wilsonScoreInterval(
     return { low: 0, high: 0 };
   }
 
-  const p = successes / trials;
+  const clampedSuccesses = Math.max(0, Math.min(successes, trials));
+  const p = clampedSuccesses / trials;
+
+  if (z <= 0) {
+    return { low: p, high: p };
+  }
   const z2 = z * z;
   const denominator = 1 + z2 / trials;
   const center = (p + z2 / (2 * trials)) / denominator;
