@@ -8,6 +8,12 @@ export interface GameRenderOptions extends ColorOptions {
   round?: number;
   /** Total bracket rounds paired with `round`. */
   totalRounds?: number;
+  /** Tournament seed for team A when historical upset blending is active. */
+  seedA?: number;
+  /** Tournament seed for team B when historical upset blending is active. */
+  seedB?: number;
+  /** Historical blend weight shown when seeds are provided. */
+  historicalWeight?: number;
 }
 
 function formatRating(team: Team): string {
@@ -33,6 +39,21 @@ export function renderGameResult(
     lines.push(
       dim(
         `  Round context: ${roundLabel(options.round, options.totalRounds)}`,
+        options
+      )
+    );
+  }
+
+  if (
+    options.seedA !== undefined &&
+    options.seedB !== undefined &&
+    options.historicalWeight !== undefined &&
+    options.historicalWeight > 0
+  ) {
+    const weightPct = Math.round(options.historicalWeight * 100);
+    lines.push(
+      dim(
+        `  Seeds: #${options.seedA} vs #${options.seedB} — win chance blends historical upset rates (${weightPct}%)`,
         options
       )
     );

@@ -69,4 +69,27 @@ describe("renderGameResult", () => {
 
     expect(lines.join("\n")).toContain("Round context: Final");
   });
+
+  it("shows historical seed blend context when seeds and weight are provided", () => {
+    const teamA = team("a", "UMBC", 1450);
+    const teamB = team("b", "Virginia", 1700);
+    const result: SimulationResult = {
+      winner: teamB,
+      scoreA: 58,
+      scoreB: 74,
+      winProbabilityA: 0.02,
+      margin: 16,
+      isUpset: false,
+    };
+
+    const lines = renderGameResult(teamA, teamB, result, {
+      enabled: false,
+      seedA: 16,
+      seedB: 1,
+      historicalWeight: 0.35,
+    });
+
+    expect(lines.join("\n")).toContain("Seeds: #16 vs #1");
+    expect(lines.join("\n")).toContain("historical upset rates (35%)");
+  });
 });

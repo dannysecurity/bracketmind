@@ -197,6 +197,26 @@ describe("runCli", () => {
     expect(stderr).toContain("Round context must satisfy");
   });
 
+  it("simulates a game with historical seed upset blending", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "game",
+        "UMBC:1450",
+        "Virginia:1700",
+        "--seed-a",
+        "16",
+        "--seed-b",
+        "1",
+        "--historical-weight",
+        "0.35",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Seeds: #16 vs #1");
+    expect(stdout).toContain("historical upset rates (35%)");
+  });
+
   it("prints seedings and round-one upset probabilities", () => {
     const { stdout } = captureOutput(() => {
       runCli([

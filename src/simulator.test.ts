@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { expectedScore } from "./ratings.js";
+import { resolveWinProbabilityA } from "./probability/winProbability.js";
 import {
   expectedMargin,
   simulateGame,
@@ -111,6 +113,31 @@ describe("simulateGame", () => {
 
     expect(result.winner).toBe(kansas);
     expect(result.scoreB).toBeGreaterThan(result.scoreA);
+  });
+
+  it("uses blended historical upset rates when seeds and weight are provided", () => {
+    const underdog = team("UMBC", 1450);
+    const favorite = team("Virginia", 1700);
+    const options = {
+      seedA: 16,
+      seedB: 1,
+      historicalWeight: 1,
+      rng: sequenceRng([0.5, 0.5, 0.5]),
+    };
+
+    const result = simulateGame(underdog, favorite, options);
+    const blendedWinProb = resolveWinProbabilityA(
+      underdog,
+      favorite,
+      underdog.rating,
+      favorite.rating,
+      options
+    );
+
+    expect(result.winProbabilityA).toBeCloseTo(blendedWinProb);
+    expect(result.winProbabilityA).toBeLessThan(
+      expectedScore(underdog.rating, favorite.rating)
+    );
   });
 
   it("always gives the winner the higher score", () => {

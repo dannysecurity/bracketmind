@@ -1,8 +1,8 @@
 import {
   expectedMarginFromRatings,
-  expectedScore,
   isRatingUpset,
 } from "./ratings.js";
+import { resolveWinProbabilityA } from "./probability/winProbability.js";
 import {
   createTournamentState,
   effectiveRating,
@@ -110,7 +110,13 @@ export function simulateGame(
   const rng = options.rng ?? DEFAULT_RNG;
   const ratingA = ratingForTeam(teamA, options);
   const ratingB = ratingForTeam(teamB, options);
-  const winProbabilityA = expectedScore(ratingA, ratingB);
+  const winProbabilityA = resolveWinProbabilityA(
+    teamA,
+    teamB,
+    ratingA,
+    ratingB,
+    options
+  );
   const roll = rng();
 
   const aWins = roll < winProbabilityA;
@@ -255,7 +261,13 @@ export function monteCarloGameOutcomes(
   const rng = options.rng ?? DEFAULT_RNG;
   const ratingA = ratingForTeam(teamA, options);
   const ratingB = ratingForTeam(teamB, options);
-  const analyticalWinRateA = expectedScore(ratingA, ratingB);
+  const analyticalWinRateA = resolveWinProbabilityA(
+    teamA,
+    teamB,
+    ratingA,
+    ratingB,
+    options
+  );
 
   let winsA = 0;
   let upsets = 0;

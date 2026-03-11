@@ -275,23 +275,34 @@ function parseGameArgs(args: string[]): {
   trials: number;
   round?: number;
   totalRounds?: number;
+  seedA?: number;
+  seedB?: number;
+  historicalWeight?: number;
 } {
-  const seedFlag = args.indexOf("--seed");
-  const seedValue = seedFlag >= 0 ? parseInt(args[seedFlag + 1], 10) : undefined;
-  const trialsFlag = args.indexOf("--trials");
+  const { historicalWeight, filtered: afterHistorical } =
+    parseHistoricalWeight(args);
+  const seedFlag = afterHistorical.indexOf("--seed");
+  const seedValue = seedFlag >= 0 ? parseInt(afterHistorical[seedFlag + 1], 10) : undefined;
+  const trialsFlag = afterHistorical.indexOf("--trials");
   const trialsValue =
-    trialsFlag >= 0 ? parseInt(args[trialsFlag + 1], 10) : 1;
-  const roundFlag = args.indexOf("--round");
+    trialsFlag >= 0 ? parseInt(afterHistorical[trialsFlag + 1], 10) : 1;
+  const roundFlag = afterHistorical.indexOf("--round");
   const roundValue =
-    roundFlag >= 0 ? parseInt(args[roundFlag + 1], 10) : undefined;
-  const totalRoundsFlag = args.indexOf("--total-rounds");
+    roundFlag >= 0 ? parseInt(afterHistorical[roundFlag + 1], 10) : undefined;
+  const totalRoundsFlag = afterHistorical.indexOf("--total-rounds");
   const totalRoundsValue =
     totalRoundsFlag >= 0
-      ? parseInt(args[totalRoundsFlag + 1], 10)
+      ? parseInt(afterHistorical[totalRoundsFlag + 1], 10)
       : undefined;
-  const noColor = args.includes("--no-color");
-  const dynamicRatings = args.includes("--dynamic-ratings");
-  const teamSpecs = args
+  const seedAFlag = afterHistorical.indexOf("--seed-a");
+  const seedAValue =
+    seedAFlag >= 0 ? parseInt(afterHistorical[seedAFlag + 1], 10) : undefined;
+  const seedBFlag = afterHistorical.indexOf("--seed-b");
+  const seedBValue =
+    seedBFlag >= 0 ? parseInt(afterHistorical[seedBFlag + 1], 10) : undefined;
+  const noColor = afterHistorical.includes("--no-color");
+  const dynamicRatings = afterHistorical.includes("--dynamic-ratings");
+  const teamSpecs = afterHistorical
     .filter(
       (value, index) =>
         value !== "--seed" &&
@@ -302,6 +313,10 @@ function parseGameArgs(args: string[]): {
         (roundFlag < 0 || index !== roundFlag + 1) &&
         value !== "--total-rounds" &&
         (totalRoundsFlag < 0 || index !== totalRoundsFlag + 1) &&
+        value !== "--seed-a" &&
+        (seedAFlag < 0 || index !== seedAFlag + 1) &&
+        value !== "--seed-b" &&
+        (seedBFlag < 0 || index !== seedBFlag + 1) &&
         value !== "--no-color" &&
         value !== "--dynamic-ratings"
     )
@@ -322,6 +337,15 @@ function parseGameArgs(args: string[]): {
       totalRoundsValue !== undefined && !Number.isNaN(totalRoundsValue)
         ? totalRoundsValue
         : undefined,
+    seedA:
+      seedAValue !== undefined && !Number.isNaN(seedAValue)
+        ? seedAValue
+        : undefined,
+    seedB:
+      seedBValue !== undefined && !Number.isNaN(seedBValue)
+        ? seedBValue
+        : undefined,
+    historicalWeight,
   };
 }
 
@@ -396,10 +420,13 @@ export function runCli(args: string[]): void {
         trials,
         round,
         totalRounds,
+        seedA,
+        seedB,
+        historicalWeight,
       } = parseGameArgs(args);
       if (teamSpecs.length !== 2 || trials <= 0) {
         console.error(
-          "Usage: bracketmind game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--round N] [--total-rounds N] [--no-color]"
+          "Usage: bracketmind game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--round N] [--total-rounds N] [--seed-a N] [--seed-b N] [--historical-weight 0-1] [--no-color]"
         );
         process.exit(1);
       }
@@ -433,11 +460,17 @@ export function runCli(args: string[]): void {
         rng,
         tournamentState,
         ...roundContext,
+        seedA,
+        seedB,
+        historicalWeight,
       };
       const renderOptions = {
         ...color,
         showRatingDeltas: dynamicRatings,
         ...roundContext,
+        seedA,
+        seedB,
+        historicalWeight,
       };
 
       if (trials > 1) {
@@ -706,7 +739,8 @@ export function runCli(args: string[]): void {
 
 Commands:
   game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings]
-       [--round N] [--total-rounds N] [--no-color]
+       [--round N] [--total-rounds N] [--seed-a N] [--seed-b N]
+       [--historical-weight 0-1] [--no-color]
                                    Simulate a single head-to-head game
   simulate <teams...> [--format list|tree] [--dynamic-ratings] [--no-color]
                                    Run a single bracket simulation
@@ -743,6 +777,7 @@ Examples:
   bracketmind game Duke:1650 Kansas:1500 --seed 42
   bracketmind game Duke:1650 Kansas:1500 --trials 5000 --seed 42
   bracketmind game Duke:1650 Kansas:1500 --dynamic-ratings --round 3 --total-rounds 4
+  bracketmind game UMBC:1450 Virginia:1700 --seed-a 16 --seed-b 1 --historical-weight 0.35
   bracketmind simulate Duke Kansas UConn Purdue --format tree
   bracketmind predict Duke Kansas UConn --iterations 5000
   bracketmind seedings Duke:1650 Kansas:1600 UConn:1550 Purdue:1500

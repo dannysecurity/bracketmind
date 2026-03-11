@@ -42,6 +42,15 @@ export interface SimulationOptions {
   totalRounds?: number;
   /** Tunable Elo update parameters; defaults to production model. */
   ratingModel?: RatingModel;
+  /** Tournament seed for team A; pairs with `seedB` for historical upset blending. */
+  seedA?: number;
+  /** Tournament seed for team B; pairs with `seedA` for historical upset blending. */
+  seedB?: number;
+  /**
+   * Weight (0–1) for NCAA historical seed upset rates when blending with Elo.
+   * Requires both `seedA` and `seedB`.
+   */
+  historicalWeight?: number;
 }
 
 export interface BracketSimulationOptions {
