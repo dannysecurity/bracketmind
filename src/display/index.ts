@@ -1,7 +1,14 @@
 export { buildBracketView, formatTeamLabel, roundLabel } from "./bracketView.js";
 export type { BracketView, MatchView, TeamView } from "./bracketView.js";
-export { ansi, bar, dim, heading, winner } from "./colors.js";
+export { renderChampionBanner } from "./championDisplay.js";
+export { ansi, bar, champion, dim, heading, upset, winner } from "./colors.js";
 export type { ColorOptions } from "./colors.js";
+export {
+  countUpsets,
+  UPSET_LABEL,
+  wasMatchUpset,
+  wasRatingUpsetMatch,
+} from "./matchOutcomes.js";
 export {
   renderBracket,
   renderBracketList,

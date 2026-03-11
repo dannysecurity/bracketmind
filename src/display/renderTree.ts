@@ -2,7 +2,8 @@ import type { Bracket } from "../types.js";
 import { displayRow, matchExtents } from "./bracketLayout.js";
 import { buildBracketView, type BracketView, type MatchView } from "./bracketView.js";
 import { formatUpsetChance } from "./bracketView.js";
-import { ColorOptions, dim, heading, winner } from "./colors.js";
+import { UPSET_LABEL } from "./matchOutcomes.js";
+import { ColorOptions, dim, heading, upset, winner } from "./colors.js";
 
 export interface TreeRenderOptions extends ColorOptions {
   nameWidth?: number;
@@ -48,12 +49,16 @@ function formatOpeningRoundTeam(
 
   const team = side === "A" ? match.teamA : match.teamB;
   if (team && match.winner.name === team.name) {
-    return name + scoreSuffix(match);
+    const upsetBadge = match.wasUpset ? upset(` ${UPSET_LABEL}`, options) : "";
+    return name + scoreSuffix(match) + upsetBadge;
   }
   return name;
 }
 
 function formatUpsetHint(match: MatchView, options: ColorOptions): string {
+  if (match.winner && match.wasUpset) {
+    return upset(` ${UPSET_LABEL}`, options);
+  }
   if (match.upsetChance === null || match.winner) {
     return "";
   }

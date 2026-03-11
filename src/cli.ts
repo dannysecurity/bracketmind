@@ -16,9 +16,9 @@ import {
 import { startServer } from "./server.js";
 import {
   renderBracketList,
-  renderChampionLine,
   renderFieldSummary,
 } from "./display/renderList.js";
+import { renderChampionBanner } from "./display/championDisplay.js";
 import { renderBracketTree } from "./display/renderTree.js";
 import { renderGameResult } from "./display/renderGameResult.js";
 import { renderGameMonteCarloSummary } from "./display/renderGameMonteCarlo.js";
@@ -356,7 +356,9 @@ export function runCli(args: string[]): void {
         console.log(fieldSummary);
       }
 
-      console.log(renderChampionLine(result, color));
+      for (const line of renderChampionBanner(result, color)) {
+        console.log(line);
+      }
       break;
     }
 
@@ -641,7 +643,9 @@ export function runCli(args: string[]): void {
           if (fieldSummary) {
             console.log(fieldSummary);
           }
-          console.log(renderChampionLine(bracket, color));
+          for (const line of renderChampionBanner(bracket, color)) {
+            console.log(line);
+          }
           break;
         }
 

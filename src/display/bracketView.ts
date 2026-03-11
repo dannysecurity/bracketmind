@@ -2,6 +2,7 @@ import { matchupUpsetProbability } from "../probability/matchup.js";
 import { buildSeedMap } from "../probability/seeds.js";
 import type { Bracket, Match, Team } from "../types.js";
 import { isByeTeam } from "../types.js";
+import { wasRatingUpsetMatch } from "./matchOutcomes.js";
 import { roundLabel } from "./roundLabels.js";
 
 export interface TeamView {
@@ -23,6 +24,8 @@ export interface MatchView {
   isByeMatch: boolean;
   /** Pre-game probability the lower-rated team wins; null for BYE or incomplete matchups. */
   upsetChance: number | null;
+  /** True when the lower-rated team won this completed matchup. */
+  wasUpset: boolean;
 }
 
 export interface BracketView {
@@ -97,6 +100,7 @@ function toMatchView(match: Match, seeds: Map<string, number>, totalRounds: numb
       (teamA?.isBye && teamB && !teamB.isBye) || (teamB?.isBye && teamA && !teamA.isBye)
     ),
     upsetChance: preGameUpsetChance(match.teamA, match.teamB),
+    wasUpset: wasRatingUpsetMatch(match),
   };
 }
 

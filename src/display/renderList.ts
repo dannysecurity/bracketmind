@@ -7,7 +7,8 @@ import {
   type MatchView,
   type TeamView,
 } from "./bracketView.js";
-import { ColorOptions, dim, heading, winner } from "./colors.js";
+import { UPSET_LABEL } from "./matchOutcomes.js";
+import { ColorOptions, dim, heading, upset, winner } from "./colors.js";
 
 export interface ListRenderOptions extends ColorOptions {
   showSeeds?: boolean;
@@ -45,7 +46,10 @@ function formatMatchLine(match: MatchView, options: ListRenderOptions): string {
       match.scoreA !== undefined && match.scoreB !== undefined
         ? ` (${match.scoreA}-${match.scoreB})`
         : "";
-    return `  ${labelA} vs ${labelB} → ${winner(winnerLabel, options)}${score}`;
+    const upsetBadge = match.wasUpset
+      ? upset(` ${UPSET_LABEL}`, options)
+      : "";
+    return `  ${labelA} vs ${labelB} → ${winner(winnerLabel, options)}${score}${upsetBadge}`;
   }
 
   const upsetHint =

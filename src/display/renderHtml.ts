@@ -11,6 +11,7 @@ import {
   type MatchView,
   type TeamView,
 } from "./bracketView.js";
+import { countUpsets, UPSET_LABEL } from "./matchOutcomes.js";
 import { buildPredictEntries, type PredictEntry } from "./renderPredict.js";
 
 export type BracketHtmlFormat = "cards" | "aligned";
@@ -107,18 +108,23 @@ function renderUpsetChanceHtml(probability: number | null): string {
 
 function renderMatchCard(match: MatchView, showSeeds: boolean): string {
   const upsetChance = !match.winner ? renderUpsetChanceHtml(match.upsetChance) : "";
+  const upsetBadge = match.wasUpset
+    ? `<span class="upset-badge">${escapeHtml(UPSET_LABEL)}</span>`
+    : "";
+  const matchClass = match.wasUpset ? "match upset-match" : "match";
 
   if (match.isByeMatch && match.winner) {
-    return `<article class="match bye-match">
+    return `<article class="${matchClass} bye-match">
       ${renderTeamCellHtml(match.winner, match, showSeeds)}
       <div class="bye-note">advances (BYE)</div>
     </article>`;
   }
 
-  return `<article class="match">
+  return `<article class="${matchClass}">
     ${renderTeamCellHtml(match.teamA, match, showSeeds)}
     ${renderTeamCellHtml(match.teamB, match, showSeeds)}
     ${upsetChance}
+    ${upsetBadge}
   </article>`;
 }
 
@@ -162,7 +168,22 @@ function renderChampionHtml(
   if (!champion) {
     return "";
   }
-  return `<p class="champion">Champion: <strong>${renderTeamLabelHtml(champion, showSeeds)}</strong></p>`;
+  return `<div class="champion-card" role="status">
+    <span class="champion-trophy" aria-hidden="true">🏆</span>
+    <div class="champion-copy">
+      <span class="champion-label">Champion</span>
+      <strong class="champion-name">${renderTeamLabelHtml(champion, showSeeds)}</strong>
+    </div>
+  </div>`;
+}
+
+function renderUpsetSummaryHtml(view: ReturnType<typeof buildBracketView>): string {
+  const total = countUpsets(view);
+  if (total === 0) {
+    return "";
+  }
+  const label = `${total} rating upset${total === 1 ? "" : "s"} in this bracket`;
+  return `<p class="upset-summary">${escapeHtml(label)}</p>`;
 }
 
 function renderBracketCardsHtml(
@@ -215,9 +236,10 @@ export function renderBracketHtml(
   const gridClass = format === "aligned" ? "bracket-grid aligned" : "bracket-grid";
 
   const fieldSummary = renderFieldSummaryHtml(bracket);
+  const upsetSummary = renderUpsetSummaryHtml(view);
   const champion = renderChampionHtml(view.champion, showSeeds);
 
-  return `<h2 class="section-heading">Simulated bracket</h2><div class="${gridClass}">${columns}</div>${fieldSummary}${champion}`;
+  return `<h2 class="section-heading">Simulated bracket</h2><div class="${gridClass}">${columns}</div>${fieldSummary}${upsetSummary}${champion}`;
 }
 
 function renderPredictNameHtml(entry: PredictEntry, showSeeds: boolean): string {

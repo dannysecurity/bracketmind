@@ -22,7 +22,7 @@ describe("renderHtml", () => {
     expect(html).toContain("Ace&lt;script&gt;");
     expect(html).not.toContain("<script>");
     expect(html).toContain('class="team winner"');
-    expect(html).toContain("Champion:");
+    expect(html).toContain('class="champion-card"');
     expect(html).toContain('<h2 class="section-heading">Simulated bracket</h2>');
   });
 
@@ -32,7 +32,7 @@ describe("renderHtml", () => {
 
     expect(html).toContain('<span class="seed">#1</span> Alpha');
     expect(html).toContain('<span class="seed">#4</span> Delta');
-    expect(html).toMatch(/Champion: <strong><span class="seed">#\d+<\/span> /);
+    expect(html).toMatch(/class="champion-name">[\s\S]*?<span class="seed">#\d+<\/span> /);
   });
 
   it("de-emphasizes losing teams in completed matches", () => {
@@ -110,6 +110,28 @@ describe("renderHtml", () => {
     expect(html).toContain('class="bracket-grid"');
     expect(html).not.toContain("bracket-grid aligned");
     expect(html).not.toContain("aligned-match");
+  });
+
+  it("marks upset wins with a badge and summary line", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
+      ...team,
+      rating: 1700 - index * 200,
+    }));
+    const bracket = createBracket(teams);
+    const firstMatch = bracket.matches.find((match) => match.round === 0 && match.slot === 0)!;
+    firstMatch.teamA = teams[3];
+    firstMatch.teamB = teams[0];
+    firstMatch.winner = teams[3];
+    firstMatch.scoreA = 72;
+    firstMatch.scoreB = 68;
+
+    const html = renderBracketHtml(bracket);
+
+    expect(html).toContain('class="match upset-match"');
+    expect(html).toContain('class="upset-badge"');
+    expect(html).toContain("UPSET");
+    expect(html).toContain('class="upset-summary"');
+    expect(html).toContain("1 rating upset in this bracket");
   });
 
   it("includes layout controls and rating hint in the viewer form", () => {

@@ -59,6 +59,25 @@ describe("buildBracketView", () => {
     const byeMatch = view.matchesByRound[0].find((match) => match.isByeMatch);
 
     expect(byeMatch?.upsetChance).toBeNull();
+    expect(byeMatch?.wasUpset).toBe(false);
+  });
+
+  it("flags rating upsets on completed matches", () => {
+    const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
+      ...team,
+      rating: 1700 - index * 200,
+    }));
+    const bracket = createBracket(teams);
+    const firstMatch = bracket.matches.find((match) => match.round === 0 && match.slot === 0)!;
+    firstMatch.teamA = teams[3];
+    firstMatch.teamB = teams[0];
+    firstMatch.winner = teams[3];
+    firstMatch.scoreA = 72;
+    firstMatch.scoreB = 68;
+
+    const view = buildBracketView(bracket);
+
+    expect(view.matchesByRound[0][0].wasUpset).toBe(true);
   });
 });
 

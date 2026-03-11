@@ -10,6 +10,7 @@ export const ansi = {
   yellow: "\x1b[33m",
   cyan: "\x1b[36m",
   gray: "\x1b[90m",
+  magenta: "\x1b[35m",
 };
 
 export function winner(text: string, options: ColorOptions): string {
@@ -38,4 +39,20 @@ export function bar(filled: string, empty: string, options: ColorOptions): strin
     return filled + empty;
   }
   return `${ansi.green}${filled}${ansi.reset}${ansi.dim}${empty}${ansi.reset}`;
+}
+
+/** Highlight completed upset results in bracket output. */
+export function upset(text: string, options: ColorOptions): string {
+  if (!options.enabled) {
+    return text;
+  }
+  return `${ansi.bold}${ansi.yellow}${text}${ansi.reset}`;
+}
+
+/** Style champion banners with a warm accent. */
+export function champion(text: string, options: ColorOptions): string {
+  if (!options.enabled) {
+    return text;
+  }
+  return `${ansi.bold}${ansi.yellow}${text}${ansi.reset}`;
 }

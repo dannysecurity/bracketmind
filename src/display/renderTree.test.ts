@@ -52,13 +52,21 @@ describe("renderBracketTree", () => {
     expect(tree).not.toContain("Very Long Team Na…");
   });
 
-  it("shows upset chance on unplayed matchups", () => {
+  it("marks completed rating upsets in tree output", () => {
     const teams = parseTeams(["Alpha", "Beta", "Gamma", "Delta"]).map((team, index) => ({
       ...team,
-      rating: 1700 - index * 100,
+      rating: 1700 - index * 200,
     }));
-    const tree = renderBracketTree(createBracket(teams), { enabled: false }).join("\n");
+    const bracket = createBracket(teams);
+    const firstMatch = bracket.matches.find((match) => match.round === 0 && match.slot === 0)!;
+    firstMatch.teamA = teams[3];
+    firstMatch.teamB = teams[0];
+    firstMatch.winner = teams[3];
+    firstMatch.scoreA = 72;
+    firstMatch.scoreB = 68;
 
-    expect(tree).toContain("upset chance");
+    const tree = renderBracketTree(bracket, { enabled: false }).join("\n");
+
+    expect(tree).toContain("UPSET");
   });
 });
