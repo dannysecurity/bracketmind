@@ -4,6 +4,7 @@ import { resolveWinProbabilityA } from "./probability/winProbability.js";
 import {
   expectedMargin,
   simulateGame,
+  simulateBestOfSeries,
   createSeededRng,
   createTournamentState,
   monteCarloGameOutcomes,
@@ -295,6 +296,64 @@ describe("simulateGame", () => {
     expect(result.ratingDeltaB).toBeLessThan(0);
     expect(teamA.rating).toBeGreaterThan(1500);
     expect(teamB.rating).toBeLessThan(1500);
+  });
+});
+
+describe("simulateBestOfSeries", () => {
+  it("plays until one team reaches the majority threshold", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const rolls = [0.1, 0.5, 0.5, 0.99, 0.5, 0.5, 0.1, 0.5, 0.5];
+    const series = simulateBestOfSeries(teamA, teamB, 3, {
+      rng: sequenceRng(rolls),
+    });
+
+    expect(series.bestOf).toBe(3);
+    expect(series.games).toHaveLength(3);
+    expect(series.winsA + series.winsB).toBe(3);
+    expect(Math.max(series.winsA, series.winsB)).toBe(2);
+    expect(series.winner.id).toBe(teamA.id);
+  });
+
+  it("carries dynamic ratings forward across games", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+    const rolls = [0.1, 0.5, 0.5, 0.99, 0.5, 0.5, 0.1, 0.5, 0.5];
+
+    const series = simulateBestOfSeries(teamA, teamB, 3, {
+      rng: sequenceRng(rolls),
+      tournamentState: state,
+    });
+
+    expect(series.teamA.rating).not.toBe(1500);
+    expect(series.teamB.rating).not.toBe(1500);
+    expect(series.teamA.rating + series.teamB.rating).toBe(3000);
+  });
+
+  it("is deterministic with a fixed seed", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const first = simulateBestOfSeries(teamA, teamB, 5, {
+      rng: createSeededRng(42),
+    });
+    const second = simulateBestOfSeries(teamA, teamB, 5, {
+      rng: createSeededRng(42),
+    });
+
+    expect(first).toEqual(second);
+  });
+
+  it("rejects even best-of lengths", () => {
+    expect(() =>
+      simulateBestOfSeries(team("A", 1500), team("B", 1500), 4)
+    ).toThrow(/odd/);
+  });
+
+  it("rejects non-positive best-of lengths", () => {
+    expect(() =>
+      simulateBestOfSeries(team("A", 1500), team("B", 1500), 0)
+    ).toThrow(/positive odd integer/);
   });
 });
 

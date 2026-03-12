@@ -31,6 +31,21 @@ export interface SimulationResult {
   ratingDeltaB?: number;
 }
 
+/** Outcome of a best-of-N head-to-head series between two teams. */
+export interface SeriesSimulationResult {
+  /** Series length (odd integer, e.g. 3 or 5). */
+  bestOf: number;
+  winsA: number;
+  winsB: number;
+  winner: Team;
+  /** Per-game simulation results in chronological order. */
+  games: SimulationResult[];
+  /** Team A after the series (ratings may change when dynamic ratings are enabled). */
+  teamA: Team;
+  /** Team B after the series (ratings may change when dynamic ratings are enabled). */
+  teamB: Team;
+}
+
 export interface SimulationOptions {
   /** Random source; defaults to Math.random. */
   rng?: () => number;

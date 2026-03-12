@@ -217,6 +217,51 @@ describe("runCli", () => {
     expect(stdout).toContain("historical upset rates (35%)");
   });
 
+  it("simulates a best-of-three series with per-game scores", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "game",
+        "Duke:1650",
+        "Kansas:1500",
+        "--best-of",
+        "3",
+        "--seed",
+        "42",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Best-of-3 Series");
+    expect(stdout).toContain("Game 1:");
+    expect(stdout).toMatch(/Series: .+ wins \d-\d/);
+  });
+
+  it("exits when --best-of is even", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["game", "Alpha", "Beta", "--best-of", "4"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("--best-of must be an odd positive integer");
+  });
+
+  it("exits when --best-of and --trials are combined", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli([
+        "game",
+        "Alpha",
+        "Beta",
+        "--best-of",
+        "3",
+        "--trials",
+        "100",
+      ]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("--best-of and --trials cannot be used together");
+  });
+
   it("prints seedings and round-one upset probabilities", () => {
     const { stdout } = captureOutput(() => {
       runCli([

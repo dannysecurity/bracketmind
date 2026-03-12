@@ -11,6 +11,7 @@ import {
   monteCarloChampionshipRates,
   monteCarloGameOutcomes,
   resolveSimulationRoundContext,
+  simulateBestOfSeries,
   simulateGame,
 } from "./simulator.js";
 import { startServer } from "./server.js";
@@ -22,6 +23,7 @@ import { renderChampionBanner } from "./display/championDisplay.js";
 import { renderBracketTree } from "./display/renderTree.js";
 import { renderGameResult } from "./display/renderGameResult.js";
 import { renderGameMonteCarloSummary } from "./display/renderGameMonteCarlo.js";
+import { renderGameSeries } from "./display/renderGameSeries.js";
 import { renderPredictSection } from "./display/renderPredict.js";
 import {
   renderSeasonHeader,
@@ -273,6 +275,7 @@ function parseGameArgs(args: string[]): {
   dynamicRatings: boolean;
   seed?: number;
   trials: number;
+  bestOf?: number;
   round?: number;
   totalRounds?: number;
   seedA?: number;
@@ -286,6 +289,9 @@ function parseGameArgs(args: string[]): {
   const trialsFlag = afterHistorical.indexOf("--trials");
   const trialsValue =
     trialsFlag >= 0 ? parseInt(afterHistorical[trialsFlag + 1], 10) : 1;
+  const bestOfFlag = afterHistorical.indexOf("--best-of");
+  const bestOfValue =
+    bestOfFlag >= 0 ? parseInt(afterHistorical[bestOfFlag + 1], 10) : undefined;
   const roundFlag = afterHistorical.indexOf("--round");
   const roundValue =
     roundFlag >= 0 ? parseInt(afterHistorical[roundFlag + 1], 10) : undefined;
@@ -309,6 +315,8 @@ function parseGameArgs(args: string[]): {
         (seedFlag < 0 || index !== seedFlag + 1) &&
         value !== "--trials" &&
         (trialsFlag < 0 || index !== trialsFlag + 1) &&
+        value !== "--best-of" &&
+        (bestOfFlag < 0 || index !== bestOfFlag + 1) &&
         value !== "--round" &&
         (roundFlag < 0 || index !== roundFlag + 1) &&
         value !== "--total-rounds" &&
@@ -329,6 +337,10 @@ function parseGameArgs(args: string[]): {
     seed: seedValue !== undefined && !Number.isNaN(seedValue) ? seedValue : undefined,
     trials:
       trialsFlag >= 0 && Number.isNaN(trialsValue) ? 0 : trialsValue,
+    bestOf:
+      bestOfValue !== undefined && !Number.isNaN(bestOfValue)
+        ? bestOfValue
+        : undefined,
     round:
       roundValue !== undefined && !Number.isNaN(roundValue)
         ? roundValue
@@ -423,11 +435,22 @@ export function runCli(args: string[]): void {
         seedA,
         seedB,
         historicalWeight,
+        bestOf,
       } = parseGameArgs(args);
       if (teamSpecs.length !== 2 || trials <= 0) {
         console.error(
-          "Usage: bracketmind game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings] [--round N] [--total-rounds N] [--seed-a N] [--seed-b N] [--historical-weight 0-1] [--no-color]"
+          "Usage: bracketmind game <team1> <team2> [--seed N] [--trials N] [--best-of N] [--dynamic-ratings] [--round N] [--total-rounds N] [--seed-a N] [--seed-b N] [--historical-weight 0-1] [--no-color]"
         );
+        process.exit(1);
+      }
+
+      if (bestOf !== undefined && (bestOf < 1 || bestOf % 2 === 0)) {
+        console.error("--best-of must be an odd positive integer (e.g. 1, 3, 5, 7).");
+        process.exit(1);
+      }
+
+      if (bestOf !== undefined && bestOf > 1 && trials > 1) {
+        console.error("--best-of and --trials cannot be used together.");
         process.exit(1);
       }
 
@@ -486,6 +509,15 @@ export function runCli(args: string[]): void {
         }
 
         for (const line of renderGameMonteCarloSummary(teamA, teamB, forecast, color)) {
+          console.log(line);
+        }
+        break;
+      }
+
+      if (bestOf !== undefined && bestOf > 1) {
+        const series = simulateBestOfSeries(teamA, teamB, bestOf, simulationOptions);
+
+        for (const line of renderGameSeries(teamA, teamB, series, renderOptions)) {
           console.log(line);
         }
         break;
@@ -738,10 +770,10 @@ export function runCli(args: string[]): void {
       console.log(`bracketmind — tournament bracket simulator
 
 Commands:
-  game <team1> <team2> [--seed N] [--trials N] [--dynamic-ratings]
+  game <team1> <team2> [--seed N] [--trials N] [--best-of N] [--dynamic-ratings]
        [--round N] [--total-rounds N] [--seed-a N] [--seed-b N]
        [--historical-weight 0-1] [--no-color]
-                                   Simulate a single head-to-head game
+                                   Simulate a head-to-head game or best-of series
   simulate <teams...> [--format list|tree] [--dynamic-ratings] [--no-color]
                                    Run a single bracket simulation
   predict <teams...> [--iterations N] [--dynamic-ratings] [--no-color]
@@ -776,7 +808,8 @@ Team names may include ratings as Name:rating (e.g. Duke:1650).
 Examples:
   bracketmind game Duke:1650 Kansas:1500 --seed 42
   bracketmind game Duke:1650 Kansas:1500 --trials 5000 --seed 42
-  bracketmind game Duke:1650 Kansas:1500 --dynamic-ratings --round 3 --total-rounds 4
+  bracketmind game Duke:1650 Kansas:1500 --best-of 3 --seed 42
+  bracketmind game Duke:1650 Kansas:1500 --best-of 3 --dynamic-ratings --round 3 --total-rounds 4
   bracketmind game UMBC:1450 Virginia:1700 --seed-a 16 --seed-b 1 --historical-weight 0.35
   bracketmind simulate Duke Kansas UConn Purdue --format tree
   bracketmind predict Duke Kansas UConn --iterations 5000
