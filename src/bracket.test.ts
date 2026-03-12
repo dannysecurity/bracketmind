@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildBracket } from "./domain/buildBracket.js";
 import {
   createBracket,
   getChampion,
@@ -108,5 +109,35 @@ describe("bracket", () => {
     expect(first.matches.map((m) => m.scoreA)).toEqual(
       second.matches.map((m) => m.scoreA)
     );
+  });
+
+  it("applies historical upset blending from team seeds during simulation", () => {
+    const underdog: Team = {
+      id: "umbc",
+      name: "UMBC",
+      rating: 1450,
+      seed: 16,
+    };
+    const favorite: Team = {
+      id: "uva",
+      name: "Virginia",
+      rating: 1700,
+      seed: 1,
+    };
+    const bracket = buildBracket([underdog, favorite], { ordering: "seed" });
+    const rngValues = [0.85, 0.5, 0.5];
+    let index = 0;
+    const rng = () => rngValues[index++ % rngValues.length];
+
+    const blended = simulateBracket(bracket, { rng, historicalWeight: 1 });
+    index = 0;
+    const pureElo = simulateBracket(bracket, { rng });
+
+    const roundOneWinner = (result: ReturnType<typeof simulateBracket>) =>
+      result.matches.find((match) => match.round === 0 && match.teamA && match.teamB)?.winner
+        ?.id;
+
+    expect(roundOneWinner(blended)).toBe("uva");
+    expect(roundOneWinner(pureElo)).toBe("umbc");
   });
 });

@@ -141,6 +141,26 @@ describe("simulateGame", () => {
     );
   });
 
+  it("resolves team.seed for historical upset blending without explicit seed flags", () => {
+    const underdog: Team = { ...team("UMBC", 1450), seed: 16 };
+    const favorite: Team = { ...team("Virginia", 1700), seed: 1 };
+    const options = {
+      historicalWeight: 1,
+      rng: sequenceRng([0.5, 0.5, 0.5]),
+    };
+
+    const result = simulateGame(underdog, favorite, options);
+    const blendedWinProb = resolveWinProbabilityA(
+      underdog,
+      favorite,
+      underdog.rating,
+      favorite.rating,
+      { ...options, seedA: 16, seedB: 1 }
+    );
+
+    expect(result.winProbabilityA).toBeCloseTo(blendedWinProb);
+  });
+
   it("always gives the winner the higher score", () => {
     const a = team("A", 1600);
     const b = team("B", 1400);

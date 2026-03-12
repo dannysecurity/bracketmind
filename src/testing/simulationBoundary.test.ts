@@ -352,7 +352,7 @@ describe("simulateBracket corruption and replay boundaries", () => {
     });
 
     const finalIdx = matchIndex(bracket.rounds - 1, 0, bracket.rounds);
-    partial.matches[finalIdx].winner = undefined;
+    partial.matches[finalIdx].winner = null;
     partial.matches[finalIdx].scoreA = undefined;
     partial.matches[finalIdx].scoreB = undefined;
 

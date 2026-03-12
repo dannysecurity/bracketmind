@@ -59,6 +59,7 @@ export function simulateBracket(
           round,
           totalRounds: working.rounds,
           ratingModel: options.ratingModel,
+          historicalWeight: options.historicalWeight,
         });
         match.winner = result.winner;
         match.scoreA = result.scoreA;

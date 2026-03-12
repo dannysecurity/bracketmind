@@ -1,5 +1,6 @@
 import type { TeamRating } from "./models/teamRating.js";
 import type { RatingModel } from "./ratingsModel.js";
+import type { ScoreModel } from "./simulation/scoreModel.js";
 import type { Team } from "./models/index.js";
 
 export type {
@@ -57,6 +58,8 @@ export interface SimulationOptions {
   totalRounds?: number;
   /** Tunable Elo update parameters; defaults to production model. */
   ratingModel?: RatingModel;
+  /** Tunable score-generation parameters; defaults to production model. */
+  scoreModel?: ScoreModel;
   /** Tournament seed for team A; pairs with `seedB` for historical upset blending. */
   seedA?: number;
   /** Tournament seed for team B; pairs with `seedA` for historical upset blending. */
@@ -75,6 +78,11 @@ export interface BracketSimulationOptions {
   dynamicRatings?: boolean;
   /** Tunable Elo update parameters when dynamicRatings is enabled. */
   ratingModel?: RatingModel;
+  /**
+   * Weight (0–1) for NCAA historical seed upset rates when blending with Elo.
+   * Requires teams to carry official seeds (or explicit seed overrides per game).
+   */
+  historicalWeight?: number;
   /**
    * Pre-seed games-played counts before the bracket starts.
    * Useful for teams entering with prior-season history (provisional vs established K).
