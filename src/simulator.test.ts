@@ -355,6 +355,56 @@ describe("simulateBestOfSeries", () => {
       simulateBestOfSeries(team("A", 1500), team("B", 1500), 0)
     ).toThrow(/positive odd integer/);
   });
+
+  it("rejects non-integer best-of lengths", () => {
+    expect(() =>
+      simulateBestOfSeries(team("A", 1500), team("B", 1500), 3.5)
+    ).toThrow(/positive odd integer/);
+  });
+
+  it("plays a single game for best-of-one", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const series = simulateBestOfSeries(teamA, teamB, 1, {
+      rng: sequenceRng([0.1, 0.5, 0.5]),
+    });
+
+    expect(series.games).toHaveLength(1);
+    expect(series.winsA).toBe(1);
+    expect(series.winsB).toBe(0);
+    expect(series.winner.id).toBe(teamA.id);
+    expect(series.games[0].winner.id).toBe(teamA.id);
+  });
+
+  it("ends early when a team sweeps a best-of-three", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const { rng, callCount } = countingRng(
+      sequenceRng([0.1, 0.5, 0.5, 0.1, 0.5, 0.5])
+    );
+
+    const series = simulateBestOfSeries(teamA, teamB, 3, { rng });
+
+    expect(series.games).toHaveLength(2);
+    expect(series.winsA).toBe(2);
+    expect(series.winsB).toBe(0);
+    expect(series.winner.id).toBe(teamA.id);
+    expect(callCount()).toBe(6);
+  });
+
+  it("does not mutate the input team objects", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const originalA = { ...teamA };
+    const originalB = { ...teamB };
+
+    simulateBestOfSeries(teamA, teamB, 3, {
+      rng: sequenceRng([0.1, 0.5, 0.5, 0.99, 0.5, 0.5, 0.1, 0.5, 0.5]),
+    });
+
+    expect(teamA).toEqual(originalA);
+    expect(teamB).toEqual(originalB);
+  });
 });
 
 describe("wilsonScoreInterval", () => {

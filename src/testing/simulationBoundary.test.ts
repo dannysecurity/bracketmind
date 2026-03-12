@@ -252,6 +252,45 @@ describe("games-played bookkeeping through full brackets", () => {
   });
 });
 
+describe("simulateBracketThroughRound / simulateBracketFromRound round boundaries", () => {
+  it("simulates no rounds when throughRound is negative", () => {
+    const bracket = createBracket(parseTeams(["A", "B", "C", "D"]));
+    const partial = simulateBracketThroughRound(bracket, -1);
+
+    const scored = partial.matches.filter((match) => match.scoreA !== undefined);
+    expect(scored).toHaveLength(0);
+    expect(() => getChampion(partial)).toThrow(/not been simulated/);
+  });
+
+  it("clamps throughRound above the final round to a full run", () => {
+    const teams = parseTeams(["A", "B", "C", "D"]);
+    const bracket = createBracket(teams);
+    const rolls = sequenceRng([0.01, 0.5, 0.5, 0.99, 0.5, 0.5, 0.01, 0.5, 0.5]);
+
+    const clamped = simulateBracketThroughRound(bracket, 999, { rng: rolls });
+    const full = simulateBracket(structuredClone(bracket), { rng: rolls });
+
+    expect(clamped.matches.map((m) => m.winner?.id)).toEqual(
+      full.matches.map((m) => m.winner?.id)
+    );
+    expect(getChampion(clamped)?.id).toBe(getChampion(full)?.id);
+  });
+
+  it("is a no-op when fromRound equals the bracket round count", () => {
+    const bracket = createBracket(parseTeams(["A", "B", "C", "D"]));
+    const partial = simulateBracketThroughRound(bracket, 0, {
+      rng: sequenceRng([0.01, 0.5, 0.5, 0.99, 0.5, 0.5]),
+    });
+
+    const unchanged = simulateBracketFromRound(partial, bracket.rounds);
+
+    expect(unchanged.matches.map((m) => m.winner?.id)).toEqual(
+      partial.matches.map((m) => m.winner?.id)
+    );
+    expect(() => getChampion(unchanged)).toThrow(/not been simulated/);
+  });
+});
+
 describe("simulateBracket corruption and replay boundaries", () => {
   it("throws when a semifinal slot is missing a participant", () => {
     const bracket = createBracket(parseTeams(["A", "B", "C", "D", "E", "F", "G", "H"]));
