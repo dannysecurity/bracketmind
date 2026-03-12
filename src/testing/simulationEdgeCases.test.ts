@@ -5,19 +5,25 @@ import {
   parseTeams,
   simulateBracket,
 } from "../bracket.js";
+import { DEFAULT_HISTORICAL_WEIGHT } from "../probability/seedUpsets.js";
+import { resolveWinProbabilityA } from "../probability/winProbability.js";
 import { expectedScore } from "../ratings.js";
 import {
+  createScoreModel,
   createSeededRng,
   expectedMargin,
   monteCarloChampionshipRates,
   monteCarloGameOutcomes,
+  simulateBestOfSeries,
   simulateGame,
 } from "../simulator.js";
 import {
   createTournamentState,
   effectiveRating,
   recordGameResult,
+  type TournamentState,
 } from "../tournamentState.js";
+import type { Team } from "../types.js";
 import {
   assertBracketSimulationInvariants,
   assertWinnerHasHigherScore,
@@ -1747,5 +1753,272 @@ describe("createSeededRng edge cases", () => {
     expect(Array.from({ length: 5 }, () => base())).toEqual(
       Array.from({ length: 5 }, () => wrapped())
     );
+  });
+});
+
+describe("scoreModel simulation edge cases", () => {
+  it("produces deterministic margins when marginNoiseRange is zero", () => {
+    const model = createScoreModel({ marginNoiseRange: 0, winnerScoreSpread: 1 });
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+    const baseline = Math.max(1, expectedMargin(teamA, teamB));
+
+    const result = simulateGame(teamA, teamB, {
+      rng: sequenceRng([0.01, 0, 0]),
+      scoreModel: model,
+    });
+
+    expect(result.margin).toBe(baseline);
+  });
+
+  it("enforces a custom loser score floor through simulateGame", () => {
+    const model = createScoreModel({
+      baseWinnerScore: 60,
+      winnerScoreSpread: 1,
+      loserScoreFloor: 58,
+      marginNoiseRange: 0,
+    });
+    const favorite = team("Favorite", 2100);
+    const underdog = team("Underdog", 1100);
+
+    const result = simulateGame(favorite, underdog, {
+      rng: sequenceRng([0.01, 0, 0]),
+      scoreModel: model,
+    });
+
+    const loserScore =
+      result.winner.id === favorite.id ? result.scoreB : result.scoreA;
+    expect(loserScore).toBeGreaterThanOrEqual(58);
+    assertWinnerHasHigherScore(result, favorite);
+  });
+
+  it("raises aggregate scores when a higher baseline is passed to Monte Carlo", () => {
+    const model = createScoreModel({
+      baseWinnerScore: 80,
+      winnerScoreSpread: 1,
+      loserScoreFloor: 72,
+      marginNoiseRange: 0,
+    });
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1500);
+
+    const custom = monteCarloGameOutcomes(teamA, teamB, 20, {
+      rng: createSeededRng(13),
+      scoreModel: model,
+    });
+    const baseline = monteCarloGameOutcomes(teamA, teamB, 20, {
+      rng: createSeededRng(13),
+    });
+
+    expect(custom.avgScoreA + custom.avgScoreB).toBeGreaterThan(
+      baseline.avgScoreA + baseline.avgScoreB
+    );
+    expect(Math.min(custom.avgScoreA, custom.avgScoreB)).toBeGreaterThanOrEqual(
+      72
+    );
+  });
+});
+
+describe("simulateBestOfSeries edge cases", () => {
+  it("awards the series to team B when they reach the majority first", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const probabilityA = winProbabilityFor(teamA.rating, teamB.rating);
+
+    const series = simulateBestOfSeries(teamA, teamB, 3, {
+      rng: sequenceRng([
+        probabilityA,
+        0.5,
+        0.5,
+        probabilityA,
+        0.5,
+        0.5,
+      ]),
+    });
+
+    expect(series.winner.id).toBe(teamB.id);
+    expect(series.winsA).toBe(0);
+    expect(series.winsB).toBe(2);
+    expect(series.games).toHaveLength(2);
+    expect(series.teamB.rating).toBe(teamB.rating);
+  });
+
+  it("plays all seven games in a competitive best-of-seven before crowning a champion", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1590);
+    const probabilityA = winProbabilityFor(teamA.rating, teamB.rating);
+
+    const series = simulateBestOfSeries(teamA, teamB, 7, {
+      rng: sequenceRng([
+        0.01,
+        0.5,
+        0.5,
+        probabilityA,
+        0.5,
+        0.5,
+        0.01,
+        0.5,
+        0.5,
+        probabilityA,
+        0.5,
+        0.5,
+        0.01,
+        0.5,
+        0.5,
+        probabilityA,
+        0.5,
+        0.5,
+        0.01,
+        0.5,
+        0.5,
+      ]),
+    });
+
+    expect(series.games).toHaveLength(7);
+    expect(series.winsA).toBe(4);
+    expect(series.winsB).toBe(3);
+    expect(series.winner.id).toBe(teamA.id);
+  });
+
+  it("consumes three RNG draws for each game played in the series", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const probabilityA = winProbabilityFor(teamA.rating, teamB.rating);
+    const { rng, callCount } = countingRng(
+      sequenceRng([probabilityA, 0.5, 0.5, probabilityA, 0.5, 0.5])
+    );
+
+    const series = simulateBestOfSeries(teamA, teamB, 3, { rng });
+
+    expect(series.winner.id).toBe(teamB.id);
+    expect(series.games).toHaveLength(2);
+    expect(callCount()).toBe(6);
+  });
+});
+
+describe("historical blend simulation edge cases", () => {
+  it("uses seed ordering to identify the underdog when ratings are equal", () => {
+    const oneSeed: Team = { ...team("OneSeed", 1500), seed: 1 };
+    const sixteenSeed: Team = { ...team("SixteenSeed", 1500), seed: 16 };
+    const options = {
+      historicalWeight: 1,
+      rng: sequenceRng([0.5, 0.5, 0.5]),
+    };
+
+    const result = simulateGame(oneSeed, sixteenSeed, options);
+    const blended = resolveWinProbabilityA(
+      oneSeed,
+      sixteenSeed,
+      1500,
+      1500,
+      { ...options, seedA: 1, seedB: 16 }
+    );
+
+    expect(result.winProbabilityA).toBeCloseTo(blended, 5);
+    expect(blended).toBeGreaterThan(0.5);
+    expect(result.winner).toBe(oneSeed);
+  });
+
+  it("falls back to pure Elo when seeds are omitted despite a historical weight", () => {
+    const teamA = team("Alpha", 1500);
+    const teamB = team("Beta", 1600);
+    const options = {
+      historicalWeight: DEFAULT_HISTORICAL_WEIGHT,
+      rng: sequenceRng([0.1, 0.5, 0.5]),
+    };
+
+    const result = simulateGame(teamA, teamB, options);
+
+    expect(result.winProbabilityA).toBeCloseTo(
+      expectedScore(teamA.rating, teamB.rating),
+      5
+    );
+    expect(result.winner).toBe(teamA);
+  });
+
+  it("reports analyticalWinRateA using partially blended seed upset probabilities", () => {
+    const underdog: Team = { ...team("UMBC", 1450), seed: 16 };
+    const favorite: Team = { ...team("Virginia", 1700), seed: 1 };
+    const options = {
+      seedA: 16,
+      seedB: 1,
+      historicalWeight: DEFAULT_HISTORICAL_WEIGHT,
+      rng: createSeededRng(42),
+    };
+    const expected = resolveWinProbabilityA(
+      underdog,
+      favorite,
+      underdog.rating,
+      favorite.rating,
+      options
+    );
+
+    const result = monteCarloGameOutcomes(underdog, favorite, 5000, options);
+
+    expect(result.analyticalWinRateA).toBeCloseTo(expected, 5);
+    expect(result.analyticalWinRateA).toBeLessThan(
+      winProbabilityFor(underdog.rating, favorite.rating)
+    );
+    expect(result.winRateA).toBeGreaterThan(expected - 0.08);
+    expect(result.winRateA).toBeLessThan(expected + 0.08);
+  });
+
+  it("simulates seeded brackets with the default historical blend weight", () => {
+    const teams = parseTeams(["S1", "S2", "S3", "S4"]).map((entry, index) => ({
+      ...entry,
+      rating: 1500,
+      seed: index + 1,
+    }));
+
+    const result = simulateBracket(createBracket(teams), {
+      rng: sequenceRng([
+        0.01,
+        0.5,
+        0.5,
+        0.01,
+        0.5,
+        0.5,
+        0.01,
+        0.5,
+        0.5,
+      ]),
+      historicalWeight: DEFAULT_HISTORICAL_WEIGHT,
+    });
+
+    assertBracketSimulationInvariants(result);
+    expect(getChampion(result).rating).toBe(1500);
+  });
+});
+
+describe("onTournamentState callback edge cases", () => {
+  it("does not invoke the callback when dynamicRatings is disabled", () => {
+    let called = false;
+
+    simulateBracket(createBracket(ratedField(4)), {
+      rng: createSeededRng(1),
+      onTournamentState: () => {
+        called = true;
+      },
+    });
+
+    expect(called).toBe(false);
+  });
+
+  it("delivers post-simulation ratings that match bracket.teams when dynamicRatings is on", () => {
+    const teams = ratedField(4, 1600, 50);
+    let captured: TournamentState | undefined;
+
+    const result = simulateBracket(createBracket(teams), {
+      dynamicRatings: true,
+      rng: createSeededRng(555),
+      onTournamentState: (state) => {
+        captured = state;
+      },
+    });
+
+    expect(captured).toBeDefined();
+    for (const entry of result.teams.filter((entry) => entry.name !== "BYE")) {
+      expect(captured!.ratings.get(entry.id)?.rating).toBe(entry.rating);
+    }
   });
 });
