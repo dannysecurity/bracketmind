@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   createScoreModel,
   defaultScoreModel,
+  validateScoreModel,
+} from "./scoreModel.js";
+import {
   generateScores,
+  simulateGame,
 } from "../simulation/gameSimulator.js";
+import type { Team } from "../types.js";
 import { createSeededRng } from "../simulation/rng.js";
 
 describe("defaultScoreModel", () => {
@@ -25,6 +30,47 @@ describe("createScoreModel", () => {
       loserScoreFloor: 55,
       marginNoiseRange: 5,
     });
+  });
+});
+
+describe("validateScoreModel", () => {
+  it("accepts the production defaults", () => {
+    expect(() => validateScoreModel(defaultScoreModel())).not.toThrow();
+  });
+
+  it("rejects negative marginNoiseRange values", () => {
+    expect(() =>
+      createScoreModel({ marginNoiseRange: -1 })
+    ).toThrow(/marginNoiseRange must be non-negative/);
+  });
+
+  it("rejects non-integer winnerScoreSpread values", () => {
+    expect(() =>
+      createScoreModel({ winnerScoreSpread: 6.5 })
+    ).toThrow(/winnerScoreSpread must be a finite integer/);
+  });
+
+  it("rejects non-finite baseWinnerScore values", () => {
+    expect(() =>
+      createScoreModel({ baseWinnerScore: Number.NaN })
+    ).toThrow(/baseWinnerScore must be a finite integer/);
+  });
+});
+
+describe("simulateGame scoreModel validation", () => {
+  function team(name: string, rating: number): Team {
+    return { id: name.toLowerCase(), name, rating };
+  }
+
+  it("rejects invalid custom score models passed through options", () => {
+    expect(() =>
+      simulateGame(team("A", 1500), team("B", 1500), {
+        scoreModel: {
+          ...defaultScoreModel(),
+          loserScoreFloor: -10,
+        },
+      })
+    ).toThrow(/loserScoreFloor must be non-negative/);
   });
 });
 

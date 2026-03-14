@@ -16,6 +16,7 @@ import { resolveSimulationRoundContext } from "./roundContext.js";
 import {
   createScoreModel,
   defaultScoreModel,
+  validateScoreModel,
   type ScoreModel,
 } from "./scoreModel.js";
 import { withResolvedSeeds } from "./seedContext.js";
@@ -28,7 +29,11 @@ export function expectedMargin(winner: Team, loser: Team): number {
 }
 
 function scoreModelForOptions(options: SimulationOptions): ScoreModel {
-  return options.scoreModel ?? defaultScoreModel();
+  const model = options.scoreModel ?? defaultScoreModel();
+  if (options.scoreModel !== undefined) {
+    validateScoreModel(model);
+  }
+  return model;
 }
 
 export function generateScores(
@@ -149,4 +154,4 @@ export function simulateGame(
   };
 }
 
-export { createScoreModel, defaultScoreModel, type ScoreModel };
+export { createScoreModel, defaultScoreModel, validateScoreModel, type ScoreModel };

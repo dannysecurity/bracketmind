@@ -26,9 +26,41 @@ export function defaultScoreModel(): ScoreModel {
   };
 }
 
+const SCORE_MODEL_FIELDS: (keyof ScoreModel)[] = [
+  "baseWinnerScore",
+  "winnerScoreSpread",
+  "loserScoreFloor",
+  "marginNoiseRange",
+];
+
+/** Reject invalid score-model overrides before they reach generateScores. */
+export function validateScoreModel(model: ScoreModel): void {
+  for (const field of SCORE_MODEL_FIELDS) {
+    const value = model[field];
+    if (!Number.isFinite(value) || !Number.isInteger(value)) {
+      throw new Error(`${field} must be a finite integer`);
+    }
+  }
+
+  if (model.baseWinnerScore < 0) {
+    throw new Error("baseWinnerScore must be non-negative");
+  }
+  if (model.winnerScoreSpread < 0) {
+    throw new Error("winnerScoreSpread must be non-negative");
+  }
+  if (model.loserScoreFloor < 0) {
+    throw new Error("loserScoreFloor must be non-negative");
+  }
+  if (model.marginNoiseRange < 0) {
+    throw new Error("marginNoiseRange must be non-negative");
+  }
+}
+
 /** Build a score model by overriding selected fields from the defaults. */
 export function createScoreModel(
   overrides: Partial<ScoreModel> = {}
 ): ScoreModel {
-  return { ...defaultScoreModel(), ...overrides };
+  const model = { ...defaultScoreModel(), ...overrides };
+  validateScoreModel(model);
+  return model;
 }

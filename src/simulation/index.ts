@@ -1,6 +1,7 @@
 export {
   createScoreModel,
   defaultScoreModel,
+  validateScoreModel,
   type ScoreModel,
 } from "./scoreModel.js";
 export {
