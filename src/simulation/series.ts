@@ -4,11 +4,8 @@ import type {
   SimulationResult,
   Team,
 } from "../types.js";
+import { cloneTeam } from "./helpers.js";
 import { simulateGame } from "./gameSimulator.js";
-
-function cloneTeam(team: Team): Team {
-  return { ...team };
-}
 
 /**
  * Simulate a best-of-N series between two teams.

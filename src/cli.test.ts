@@ -236,6 +236,25 @@ describe("runCli", () => {
     expect(stdout).toMatch(/Series: .+ wins \d-\d/);
   });
 
+  it("shows final ratings after a dynamic-ratings best-of series", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "game",
+        "Alpha:1500",
+        "Beta:1500",
+        "--best-of",
+        "3",
+        "--seed",
+        "42",
+        "--dynamic-ratings",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Best-of-3 Series");
+    expect(stdout).toContain("Final ratings:");
+  });
+
   it("exits when --best-of is even", () => {
     const { exitCode, stderr } = captureOutput(() => {
       runCli(["game", "Alpha", "Beta", "--best-of", "4"]);

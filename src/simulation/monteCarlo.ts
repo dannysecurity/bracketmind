@@ -1,30 +1,17 @@
 import { resolveWinProbabilityA } from "../probability/winProbability.js";
-import {
-  createTournamentState,
-  effectiveRating,
-} from "../tournamentState.js";
+import { createTournamentState } from "../tournamentState.js";
 import type {
   GameMonteCarloResult,
   SimulationOptions,
   SimulationResult,
   Team,
 } from "../types.js";
+import { cloneTeam, ratingForTeam } from "./helpers.js";
 import { simulateGame } from "./gameSimulator.js";
 import { withResolvedSeeds } from "./seedContext.js";
 import { summarizeMargins, wilsonScoreInterval } from "./stats.js";
 
 const DEFAULT_RNG = Math.random;
-
-function cloneTeam(team: Team): Team {
-  return { ...team };
-}
-
-function ratingForTeam(team: Team, options: SimulationOptions): number {
-  if (options.tournamentState) {
-    return effectiveRating(team, options.tournamentState);
-  }
-  return team.rating;
-}
 
 /** Run many head-to-head simulations and aggregate win, score, and upset rates. */
 export function monteCarloGameOutcomes(

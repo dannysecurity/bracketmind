@@ -351,6 +351,23 @@ describe("simulateBestOfSeries", () => {
     expect(series.teamA.rating + series.teamB.rating).toBe(3000);
   });
 
+  it("recomputes win probability from updated ratings between series games", () => {
+    const teamA = team("Alpha", 1600);
+    const teamB = team("Beta", 1500);
+    const state = createTournamentState([teamA, teamB]);
+    const rolls = [0.1, 0.5, 0.5, 0.99, 0.5, 0.5, 0.1, 0.5, 0.5];
+
+    const series = simulateBestOfSeries(teamA, teamB, 3, {
+      rng: sequenceRng(rolls),
+      tournamentState: state,
+    });
+
+    expect(series.games).toHaveLength(3);
+    expect(series.games[0].winProbabilityA).toBeCloseTo(0.64, 2);
+    expect(series.games[1].winProbabilityA).not.toBe(series.games[0].winProbabilityA);
+    expect(series.games[2].winProbabilityA).not.toBe(series.games[1].winProbabilityA);
+  });
+
   it("is deterministic with a fixed seed", () => {
     const teamA = team("Alpha", 1600);
     const teamB = team("Beta", 1500);

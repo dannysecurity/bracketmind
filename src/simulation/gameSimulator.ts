@@ -3,10 +3,7 @@ import {
   isRatingUpset,
 } from "../ratings.js";
 import { resolveWinProbabilityA } from "../probability/winProbability.js";
-import {
-  effectiveRating,
-  recordGameResult,
-} from "../tournamentState.js";
+import { recordGameResult } from "../tournamentState.js";
 import type {
   SimulationOptions,
   SimulationResult,
@@ -19,6 +16,7 @@ import {
   validateScoreModel,
   type ScoreModel,
 } from "./scoreModel.js";
+import { ratingForTeam } from "./helpers.js";
 import { withResolvedSeeds } from "./seedContext.js";
 
 const DEFAULT_RNG = Math.random;
@@ -36,6 +34,12 @@ function scoreModelForOptions(options: SimulationOptions): ScoreModel {
   return model;
 }
 
+/**
+ * Generate winner and loser scores from rating gap, margin noise, and spread.
+ *
+ * Margin is at least 1; when the loser would fall below `loserScoreFloor`,
+ * both scores shift upward while preserving the margin.
+ */
 export function generateScores(
   winnerRating: number,
   loserRating: number,
@@ -61,13 +65,6 @@ export function generateScores(
   }
 
   return { scoreWinner, scoreLoser };
-}
-
-function ratingForTeam(team: Team, options: SimulationOptions): number {
-  if (options.tournamentState) {
-    return effectiveRating(team, options.tournamentState);
-  }
-  return team.rating;
 }
 
 /**
