@@ -152,6 +152,7 @@ export function simulateBracketThroughRound(
           round,
           totalRounds: working.rounds,
           ratingModel: options.ratingModel,
+          historicalWeight: options.historicalWeight,
         });
         match.winner = result.winner;
         match.scoreA = result.scoreA;
@@ -218,6 +219,7 @@ export function simulateBracketFromRound(
           round,
           totalRounds: working.rounds,
           ratingModel: options.ratingModel,
+          historicalWeight: options.historicalWeight,
         });
         match.winner = result.winner;
         match.scoreA = result.scoreA;
