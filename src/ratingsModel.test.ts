@@ -38,6 +38,8 @@ describe("defaultRatingModel", () => {
       rdDecayPerGame: 3,
       rdKMin: 0.92,
       rdKRange: 0.08,
+      formMomentumDecay: 0.6,
+      formKRange: 0.06,
     });
   });
 });

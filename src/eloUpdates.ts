@@ -78,10 +78,12 @@ export function contextualKFactor(
     model
   );
   const confidence = confidenceKMultiplier(team.ratingDeviation, model);
+  const form = 1 + model.formKRange * team.formMomentum;
   return Math.round(
     provisional *
       roundKMultiplier(context.round, context.totalRounds, model) *
-      confidence
+      confidence *
+      form
   );
 }
 
@@ -152,20 +154,21 @@ export function computeActualScores(
   );
 }
 
-/** Apply a contextual Elo update using precomputed actual scores. */
+/** Apply a contextual Elo update using per-team K factors. */
 export function updateRatingsWithContext(
   ratingA: number,
   ratingB: number,
   actualA: number,
   actualB: number,
-  k: number
+  kA: number,
+  kB: number = kA
 ): [number, number] {
   const expectedA = expectedScore(ratingA, ratingB);
   const expectedB = 1 - expectedA;
 
   return [
-    Math.round(ratingA + k * (actualA - expectedA)),
-    Math.round(ratingB + k * (actualB - expectedB)),
+    Math.round(ratingA + kA * (actualA - expectedA)),
+    Math.round(ratingB + kB * (actualB - expectedB)),
   ];
 }
 
@@ -178,10 +181,8 @@ export function updateTeamRatingsWithContext(
   context: GameRatingContext,
   model: RatingModel = defaultRatingModel()
 ): [TeamRating, TeamRating] {
-  const k =
-    (contextualKFactor(teamA, context, model) +
-      contextualKFactor(teamB, context, model)) /
-    2;
+  const kA = contextualKFactor(teamA, context, model);
+  const kB = contextualKFactor(teamB, context, model);
   const [actualA, actualB] = computeActualScores(
     scoreA,
     scoreB,
@@ -190,16 +191,23 @@ export function updateTeamRatingsWithContext(
     teamB.rating,
     model
   );
+  const expectedA = expectedScore(teamA.rating, teamB.rating);
+  const expectedB = 1 - expectedA;
   const [newRatingA, newRatingB] = updateRatingsWithContext(
     teamA.rating,
     teamB.rating,
     actualA,
     actualB,
-    k
+    kA,
+    kB
   );
 
   return [
-    applyRatingUpdate(teamA, newRatingA, model),
-    applyRatingUpdate(teamB, newRatingB, model),
+    applyRatingUpdate(teamA, newRatingA, model, {
+      performanceSurprise: actualA - expectedA,
+    }),
+    applyRatingUpdate(teamB, newRatingB, model, {
+      performanceSurprise: actualB - expectedB,
+    }),
   ];
 }

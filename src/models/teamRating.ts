@@ -13,6 +13,11 @@ export interface TeamRating {
   peakRating: number;
   /** Rating change from the most recent game (0 before any games). */
   lastDelta: number;
+  /**
+   * Recent form in roughly [-1, 1]: positive when the team outperforms
+   * expectations, negative when it underperforms.
+   */
+  formMomentum: number;
 }
 
 export interface CreateTeamRatingOptions {
@@ -46,6 +51,7 @@ export function createTeamRating(
     ratingDeviation,
     peakRating: rating,
     lastDelta: 0,
+    formMomentum: 0,
   };
 }
 
@@ -74,14 +80,32 @@ export function confidenceKMultiplier(
   return model.rdKMin + model.rdKRange * Math.max(0, Math.min(1, progress));
 }
 
+/** Blend a new performance surprise into the team's form momentum. */
+export function updateFormMomentum(
+  team: TeamRating,
+  performanceSurprise: number,
+  model: RatingModel = defaultRatingModel()
+): number {
+  const clamped = Math.max(-1, Math.min(1, performanceSurprise));
+  return (
+    team.formMomentum * model.formMomentumDecay +
+    clamped * (1 - model.formMomentumDecay)
+  );
+}
+
 /** Apply a rating change and advance games-played / deviation state. */
 export function applyRatingUpdate(
   team: TeamRating,
   newRating: number,
-  model: RatingModel = defaultRatingModel()
+  model: RatingModel = defaultRatingModel(),
+  options: { performanceSurprise?: number } = {}
 ): TeamRating {
   const lastDelta = newRating - team.rating;
   const gamesPlayed = team.gamesPlayed + 1;
+  const formMomentum =
+    options.performanceSurprise === undefined
+      ? team.formMomentum
+      : updateFormMomentum(team, options.performanceSurprise, model);
 
   return {
     rating: newRating,
@@ -89,6 +113,7 @@ export function applyRatingUpdate(
     ratingDeviation: ratingDeviationAfterGames(gamesPlayed, model),
     peakRating: Math.max(team.peakRating, newRating),
     lastDelta,
+    formMomentum,
   };
 }
 

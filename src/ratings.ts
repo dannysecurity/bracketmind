@@ -84,7 +84,8 @@ export function updateRatings(
   ratingB: number,
   scoreA: number,
   scoreB: number,
-  k = DEFAULT_K_FACTOR
+  kA = DEFAULT_K_FACTOR,
+  kB = kA
 ): [number, number] {
   const total = scoreA + scoreB;
   if (total === 0) {
@@ -97,8 +98,8 @@ export function updateRatings(
   const expectedB = 1 - expectedA;
 
   return [
-    Math.round(ratingA + k * (actualA - expectedA)),
-    Math.round(ratingB + k * (actualB - expectedB)),
+    Math.round(ratingA + kA * (actualA - expectedA)),
+    Math.round(ratingB + kB * (actualB - expectedB)),
   ];
 }
 
@@ -110,13 +111,15 @@ export function updateTeamRatings(
   scoreB: number,
   model: RatingModel = defaultRatingModel()
 ): [TeamRating, TeamRating] {
-  const k = (kFactorForTeam(teamA.gamesPlayed, DEFAULT_K_FACTOR, model) + kFactorForTeam(teamB.gamesPlayed, DEFAULT_K_FACTOR, model)) / 2;
+  const kA = kFactorForTeam(teamA.gamesPlayed, DEFAULT_K_FACTOR, model);
+  const kB = kFactorForTeam(teamB.gamesPlayed, DEFAULT_K_FACTOR, model);
   const [newRatingA, newRatingB] = updateRatings(
     teamA.rating,
     teamB.rating,
     scoreA,
     scoreB,
-    k
+    kA,
+    kB
   );
 
   return [

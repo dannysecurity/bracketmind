@@ -297,7 +297,7 @@ describe("simulation property sweep", () => {
         dynamicRatings: true,
         rng: createSeededRng(seed),
       });
-      assertRatingTotalConserved(startingTotal, totalLiveRatingPoints(result));
+      assertRatingTotalConserved(startingTotal, totalLiveRatingPoints(result), 1);
       expect(getChampion(result).name).not.toBe("BYE");
     });
   });

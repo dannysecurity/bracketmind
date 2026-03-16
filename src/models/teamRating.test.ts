@@ -5,6 +5,7 @@ import {
   createTeamRating,
   isProvisionalTeamRating,
   ratingDeviationAfterGames,
+  updateFormMomentum,
   withPriorGamesPlayed,
 } from "./teamRating.js";
 import { defaultRatingModel } from "../ratingsModel.js";
@@ -20,6 +21,7 @@ describe("createTeamRating", () => {
       ratingDeviation: model.initialRatingDeviation,
       peakRating: 1500,
       lastDelta: 0,
+      formMomentum: 0,
     });
   });
 
@@ -57,6 +59,18 @@ describe("confidenceKMultiplier", () => {
   });
 });
 
+describe("updateFormMomentum", () => {
+  it("blends performance surprise into a bounded momentum score", () => {
+    const team = createTeamRating(1500);
+    const hot = updateFormMomentum(team, 0.8);
+    const cold = updateFormMomentum(team, -0.8);
+
+    expect(hot).toBeCloseTo(0.32);
+    expect(cold).toBeCloseTo(-0.32);
+    expect(updateFormMomentum({ ...team, formMomentum: hot }, 1)).toBeLessThanOrEqual(1);
+  });
+});
+
 describe("applyRatingUpdate", () => {
   it("tracks peak rating and last delta after a win", () => {
     const team = createTeamRating(1500);
@@ -76,6 +90,15 @@ describe("applyRatingUpdate", () => {
 
     expect(dipped.peakRating).toBe(1650);
     expect(dipped.lastDelta).toBe(-70);
+  });
+
+  it("tracks form momentum when performance surprise is provided", () => {
+    const team = createTeamRating(1500);
+    const updated = applyRatingUpdate(team, 1520, defaultRatingModel(), {
+      performanceSurprise: 0.5,
+    });
+
+    expect(updated.formMomentum).toBeCloseTo(0.2);
   });
 });
 

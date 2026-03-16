@@ -25,6 +25,19 @@ describe("ratings", () => {
     expect(newB).toBeLessThan(1500);
   });
 
+  it("applies independent K factors to each team", () => {
+    const [newProvisional, newEstablished] = updateRatings(
+      1500,
+      1500,
+      90,
+      60,
+      kFactorForTeam(0),
+      kFactorForTeam(40)
+    );
+
+    expect(newProvisional - 1500).toBeGreaterThan(1500 - newEstablished);
+  });
+
   it("gives equal teams a 50% upset probability", () => {
     expect(upsetProbability(1500, 1500)).toBeCloseTo(0.5);
   });

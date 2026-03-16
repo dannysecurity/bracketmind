@@ -84,6 +84,16 @@ describe("contextualKFactor", () => {
 
     expect(uncertainK).toBeGreaterThan(confidentK);
   });
+
+  it("boosts K for teams on a hot streak", () => {
+    const cold = createTeamRating(1500);
+    const hot = { ...createTeamRating(1500), formMomentum: 0.5 };
+    const context = gameContext({ round: 0, totalRounds: 3 });
+
+    expect(contextualKFactor(hot, context)).toBeGreaterThan(
+      contextualKFactor(cold, context)
+    );
+  });
 });
 
 describe("computeActualScores", () => {
@@ -220,5 +230,23 @@ describe("updateTeamRatingsWithContext", () => {
 
     const totalDelta = newA.rating - teamA.rating + (newB.rating - teamB.rating);
     expect(Math.abs(totalDelta)).toBeLessThanOrEqual(1);
+  });
+
+  it("uses per-team K so provisional winners gain more than established losers lose", () => {
+    const provisional = createTeamRating(1500);
+    const established = createTeamRating(1500, { gamesPlayed: 40 });
+    const context = gameContext({ totalRounds: 1, round: 0, margin: 20 });
+
+    const [winner, loser] = updateTeamRatingsWithContext(
+      provisional,
+      established,
+      90,
+      70,
+      context
+    );
+
+    expect(winner.lastDelta).toBeGreaterThan(Math.abs(loser.lastDelta));
+    expect(winner.formMomentum).toBeGreaterThan(0);
+    expect(loser.formMomentum).toBeLessThan(0);
   });
 });

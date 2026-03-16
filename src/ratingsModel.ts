@@ -36,6 +36,10 @@ export interface RatingModel {
   rdKMin: number;
   /** Additional K multiplier at maximum rating deviation. */
   rdKRange: number;
+  /** EMA decay for form momentum after each game (0–1; higher keeps more history). */
+  formMomentumDecay: number;
+  /** Max fractional K boost/penalty from form momentum (e.g. 0.06 → ±6%). */
+  formKRange: number;
 }
 
 /** Production defaults matching pre-model behavior. */
@@ -56,6 +60,8 @@ export function defaultRatingModel(): RatingModel {
     rdDecayPerGame: 3,
     rdKMin: 0.92,
     rdKRange: 0.08,
+    formMomentumDecay: 0.6,
+    formKRange: 0.06,
   };
 }
 
