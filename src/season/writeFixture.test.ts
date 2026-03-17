@@ -58,4 +58,19 @@ describe("writeSeasonFixture", () => {
     expect(outputPath).toBe(defaultFixtureOutputPath(doc, tempDir));
     expect(parseSeasonFile(outputPath)).toEqual(doc);
   });
+
+  it("imports a full Final Four historical season fixture", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "bracketmind-fixture-"));
+    const doc = parseSeasonFile(join(FIXTURES, "2024-final-four.json"));
+    const sourcePath = join(tempDir, "downloaded-final-four.json");
+    writeFileSync(sourcePath, serializeSeasonDocument(doc), "utf8");
+
+    const { doc: imported, outputPath } = importSeasonFromFile(sourcePath, {
+      outputDir: tempDir,
+    });
+
+    expect(imported.id).toBe("2024-final-four");
+    expect(outputPath).toBe(join(tempDir, "2024-final-four.json"));
+    expect(parseSeasonFile(outputPath).games).toHaveLength(3);
+  });
 });

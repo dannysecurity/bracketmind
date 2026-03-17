@@ -28,6 +28,7 @@ describe("fixtureCatalog", () => {
     expect(entries.map((entry) => entry.id)).toContain("2024-south-region");
     expect(entries.map((entry) => entry.id)).toContain("2023-east-mini");
     expect(entries.map((entry) => entry.id)).toContain("2023-west-mini");
+    expect(entries.map((entry) => entry.id)).toContain("2024-final-four");
     expect(entries.every((entry) => entry.path.startsWith(bundledFixturesDir()))).toBe(
       true
     );
@@ -40,6 +41,9 @@ describe("fixtureCatalog", () => {
     expect(eastMini?.championName).toBe("UConn");
     expect(entries.find((entry) => entry.id === "2024-south-region")?.championName).toBe(
       "Houston"
+    );
+    expect(entries.find((entry) => entry.id === "2024-final-four")?.championName).toBe(
+      "UConn"
     );
   });
 
@@ -60,6 +64,18 @@ describe("fixtureCatalog", () => {
     expect(() => resolveSeasonFixturePath("not-a-real-season")).toThrow(
       /Season fixture not found/
     );
+  });
+});
+
+describe("2024-final-four fixture", () => {
+  it("hydrates the semifinals and championship from historical results", () => {
+    const doc = parseSeasonFile(join(FIXTURES, "2024-final-four.json"));
+    const bracket = loadSeasonBracket(doc);
+
+    expect(doc.teams).toHaveLength(4);
+    expect(doc.games).toHaveLength(3);
+    assertBracketSimulationInvariants(bracket);
+    expect(getSeasonChampion(doc).name).toBe("UConn");
   });
 });
 
