@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { parseSeasonFile } from "./parseSeason.js";
 import { summarizeSeason } from "./summarizeSeason.js";
 import type { SeasonDocument } from "./types.js";
@@ -18,6 +18,11 @@ export interface FixtureCatalogEntry {
 
 const BUNDLED_FIXTURES_DIR = join(import.meta.dirname, "../../fixtures/seasons");
 
+/** True when a filename has a `.json` extension (case-insensitive). */
+export function isSeasonJsonFilename(name: string): boolean {
+  return extname(name).toLowerCase() === ".json";
+}
+
 /** Directory containing shipped season JSON fixtures. */
 export function bundledFixturesDir(): string {
   return BUNDLED_FIXTURES_DIR;
@@ -26,7 +31,7 @@ export function bundledFixturesDir(): string {
 /** List every bundled season fixture with summary metadata. */
 export function listBundledFixtures(): FixtureCatalogEntry[] {
   const filenames = readdirSync(BUNDLED_FIXTURES_DIR)
-    .filter((name) => name.endsWith(".json"))
+    .filter(isSeasonJsonFilename)
     .sort();
 
   return filenames.map((filename) => {
@@ -67,7 +72,7 @@ export function resolveSeasonFixturePath(input: string): string {
   }
 
   const alias = trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
-  const filename = alias.endsWith(".json") ? alias : `${alias}.json`;
+  const filename = isSeasonJsonFilename(alias) ? alias : `${alias}.json`;
 
   const cwdCandidate = join(process.cwd(), filename);
   if (existsSync(cwdCandidate)) {

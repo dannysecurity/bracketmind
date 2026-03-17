@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { analyzeSeasonUpsets } from "./analyzeUpsets.js";
 import {
   bundledFixturesDir,
+  isSeasonJsonFilename,
   listBundledFixtures,
   resolveSeasonFixturePath,
 } from "./fixtureCatalog.js";
@@ -13,6 +14,13 @@ import { assertBracketSimulationInvariants } from "../testing/simulationFixtures
 const FIXTURES = join(import.meta.dirname, "../../fixtures/seasons");
 
 describe("fixtureCatalog", () => {
+  it("recognizes season JSON filenames case-insensitively", () => {
+    expect(isSeasonJsonFilename("2024-east-mini.json")).toBe(true);
+    expect(isSeasonJsonFilename("2024-east-mini.JSON")).toBe(true);
+    expect(isSeasonJsonFilename("notes.txt")).toBe(false);
+    expect(isSeasonJsonFilename("not-json")).toBe(false);
+  });
+
   it("lists every bundled season fixture with metadata", () => {
     const entries = listBundledFixtures();
 

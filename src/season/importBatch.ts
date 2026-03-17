@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { extname, join } from "node:path";
+import { join } from "node:path";
+import { isSeasonJsonFilename } from "./fixtureCatalog.js";
 import { parseSeasonFile } from "./parseSeason.js";
 import { summarizeSeason } from "./summarizeSeason.js";
 import type { SeasonSummary } from "./summarizeSeason.js";
@@ -44,7 +45,7 @@ export function discoverSeasonFixtureFiles(directory: string): string[] {
   }
 
   return readdirSync(directory)
-    .filter((name) => extname(name).toLowerCase() === ".json")
+    .filter(isSeasonJsonFilename)
     .sort()
     .map((name) => join(directory, name));
 }

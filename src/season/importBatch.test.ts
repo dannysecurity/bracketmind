@@ -18,11 +18,31 @@ import { serializeSeasonDocument } from "./serializeSeason.js";
 const FIXTURES = join(import.meta.dirname, "../../fixtures/seasons");
 
 describe("discoverSeasonFixtureFiles", () => {
+  let tempDir = "";
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true });
+      tempDir = "";
+    }
+  });
+
   it("lists sorted JSON files in a directory", () => {
     const files = discoverSeasonFixtureFiles(FIXTURES);
     expect(files.length).toBeGreaterThanOrEqual(8);
     expect(files.every((path) => path.endsWith(".json"))).toBe(true);
     expect(files).toEqual([...files].sort());
+  });
+
+  it("includes uppercase .JSON extensions", () => {
+    tempDir = mkdtempSync(join(tmpdir(), "bracketmind-json-ext-"));
+    const sourceDir = join(tempDir, "source");
+    mkdirSync(sourceDir, { recursive: true });
+    writeFileSync(join(sourceDir, "season.JSON"), "{}", "utf8");
+    writeFileSync(join(sourceDir, "readme.txt"), "skip", "utf8");
+
+    const files = discoverSeasonFixtureFiles(sourceDir);
+    expect(files).toEqual([join(sourceDir, "season.JSON")]);
   });
 
   it("rejects missing directories", () => {
