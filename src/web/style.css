@@ -169,35 +169,22 @@ select:focus-visible {
   margin-bottom: 0;
 }
 
-.match-connector {
+.round-connectors {
   position: absolute;
-  top: 50%;
-  right: -1.25rem;
+  top: 0;
+  right: calc(-1.25rem - 1px);
   width: 1.25rem;
-  height: 2px;
-  background: var(--border);
-  transform: translateY(-50%);
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
 }
 
-.match-connector::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 2px;
-  height: 50%;
-  background: var(--border);
-  transform: translateY(-100%);
-}
-
-.aligned-round:not(:last-child) .aligned-match .match-connector::before {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 2px;
-  height: 50%;
-  background: var(--border);
+.round-connectors path {
+  stroke: var(--border);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
 }
 
 .round h3 {
@@ -499,7 +486,7 @@ select:focus-visible {
     box-shadow: none;
   }
 
-  .match-connector,
+  .round-connectors,
   .upset-chance {
     display: none;
   }

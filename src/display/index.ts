@@ -1,3 +1,8 @@
+export {
+  buildRoundConnectorPaths,
+  CONNECTOR_ZONE_WIDTH,
+  renderRoundConnectorSvg,
+} from "./bracketConnectors.js";
 export { buildBracketView, formatTeamLabel, roundLabel } from "./bracketView.js";
 export type { BracketView, MatchView, TeamView } from "./bracketView.js";
 export { renderChampionBanner } from "./championDisplay.js";

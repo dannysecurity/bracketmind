@@ -100,7 +100,18 @@ describe("renderHtml", () => {
     expect(html).toContain('style="--bracket-rows: 6"');
     expect(html).toContain('class="aligned-match"');
     expect(html).toContain('style="grid-row:');
-    expect(html).toContain('class="match-connector"');
+    expect(html).toContain('class="round-connectors"');
+    expect(html).toContain("<path d=");
+    expect(html).not.toContain('class="match-connector"');
+  });
+
+  it("omits connector SVG from the final round column", () => {
+    const teams = seededTeams(["Alpha", "Beta", "Gamma", "Delta"]);
+    const html = renderBracketHtml(simulateBracket(createBracket(teams)), { format: "aligned" });
+    const finalRound = html.match(/<section class="round aligned-round"[\s\S]*?<\/section>/g)?.at(-1);
+
+    expect(finalRound).toBeDefined();
+    expect(finalRound).not.toContain("round-connectors");
   });
 
   it("keeps card columns when format is cards", () => {

@@ -1,5 +1,6 @@
 import type { Bracket } from "../types.js";
 import { isByeTeam } from "../types.js";
+import { renderRoundConnectorSvg } from "./bracketConnectors.js";
 import {
   bracketGridRowCount,
   displayRow,
@@ -141,14 +142,9 @@ function renderAlignedMatchCard(
   const rowStart = round === 0 ? topRow + 1 : midRow + 1;
   const rowEnd = round === 0 ? bottomRow + 2 : midRow + 2;
   const style = `style="grid-row: ${rowStart} / ${rowEnd}"`;
-  const connector =
-    round < totalRounds - 1
-      ? `<span class="match-connector" aria-hidden="true"></span>`
-      : "";
 
   return `<div class="aligned-match" ${style}>
     ${renderMatchCard(match, showSeeds)}
-    ${connector}
   </div>`;
 }
 
@@ -209,14 +205,24 @@ function renderBracketAlignedHtml(
 
   return view.matchesByRound
     .map(
-      (matches, roundIndex) => `<section class="round aligned-round" style="--bracket-rows: ${rowCount}">
+      (matches, roundIndex) => {
+        const connectors = renderRoundConnectorSvg(
+          roundIndex,
+          view.rounds,
+          firstRoundMatches,
+          rowCount
+        );
+
+        return `<section class="round aligned-round" style="--bracket-rows: ${rowCount}">
         <h3>${escapeHtml(view.roundLabels[roundIndex])}</h3>
         <div class="aligned-round-grid">
           ${matches
             .map((match) => renderAlignedMatchCard(match, showSeeds, roundIndex, view.rounds))
             .join("\n")}
+          ${connectors}
         </div>
-      </section>`
+      </section>`;
+      }
     )
     .join("\n");
 }
