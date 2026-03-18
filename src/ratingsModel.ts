@@ -40,6 +40,15 @@ export interface RatingModel {
   formMomentumDecay: number;
   /** Max fractional K boost/penalty from form momentum (e.g. 0.06 → ±6%). */
   formKRange: number;
+  /**
+   * Weight (0–1) for NCAA seed context when scaling per-team K.
+   * Set to 0 to disable seed-aware K adjustments.
+   */
+  seedKWeight: number;
+  /** Max fractional K boost when an underdog wins a rare seed upset. */
+  seedKUpsetBoostMax: number;
+  /** Max fractional K reduction when the favorite wins as expected. */
+  seedKExpectedWinDampen: number;
 }
 
 /** Production defaults matching pre-model behavior. */
@@ -62,6 +71,9 @@ export function defaultRatingModel(): RatingModel {
     rdKRange: 0.08,
     formMomentumDecay: 0.6,
     formKRange: 0.06,
+    seedKWeight: 0.35,
+    seedKUpsetBoostMax: 0.18,
+    seedKExpectedWinDampen: 0.05,
   };
 }
 

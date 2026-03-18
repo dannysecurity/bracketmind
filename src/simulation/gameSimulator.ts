@@ -132,6 +132,8 @@ export function simulateGame(
         ...roundContext,
         margin,
         isUpset,
+        seedA: resolvedOptions.seedA,
+        seedB: resolvedOptions.seedB,
       },
       resolvedOptions.ratingModel
     );

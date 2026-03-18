@@ -13,6 +13,7 @@ import {
   defaultRatingModel,
   type RatingModel,
 } from "./ratingsModel.js";
+import { seedKMultiplierForMatchup } from "./ratings/seedKFactors.js";
 
 /** Context for scaling Elo updates by game situation and bracket stage. */
 export interface GameRatingContext {
@@ -24,6 +25,10 @@ export interface GameRatingContext {
   margin: number;
   /** True when the lower-rated team won. */
   isUpset: boolean;
+  /** Tournament seed for team A when known. */
+  seedA?: number;
+  /** Tournament seed for team B when known. */
+  seedB?: number;
 }
 
 /**
@@ -79,11 +84,16 @@ export function contextualKFactor(
   );
   const confidence = confidenceKMultiplier(team.ratingDeviation, model);
   const form = 1 + model.formKRange * team.formMomentum;
+  const seedK = seedKMultiplierForMatchup(context.seedA, context.seedB, {
+    round: context.round,
+    isUpset: context.isUpset,
+  }, model);
   return Math.round(
     provisional *
       roundKMultiplier(context.round, context.totalRounds, model) *
       confidence *
-      form
+      form *
+      seedK
   );
 }
 
@@ -181,6 +191,7 @@ export function updateTeamRatingsWithContext(
   context: GameRatingContext,
   model: RatingModel = defaultRatingModel()
 ): [TeamRating, TeamRating] {
+  const winnerIsA = scoreA > scoreB;
   const kA = contextualKFactor(teamA, context, model);
   const kB = contextualKFactor(teamB, context, model);
   const [actualA, actualB] = computeActualScores(

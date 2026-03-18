@@ -152,4 +152,26 @@ describe("recordGameResult", () => {
 
     expect(lateGain).toBeGreaterThan(earlyGain);
   });
+
+  it("transfers more rating on a rare seed upset than without seed context", () => {
+    const favorite = { ...team("Favorite", 1700), seed: 1 };
+    const underdog = { ...team("Underdog", 1500), seed: 16 };
+    const seededState = createTournamentState([favorite, underdog]);
+    recordGameResult(seededState, underdog, favorite, 80, 70, {
+      margin: 10,
+      seedA: 16,
+      seedB: 1,
+    });
+    const seededGain = underdog.rating - 1500;
+
+    const plainFavorite = team("Favorite2", 1700);
+    const plainUnderdog = team("Underdog2", 1500);
+    const plainState = createTournamentState([plainFavorite, plainUnderdog]);
+    recordGameResult(plainState, plainUnderdog, plainFavorite, 80, 70, {
+      margin: 10,
+    });
+    const plainGain = plainUnderdog.rating - 1500;
+
+    expect(seededGain).toBeGreaterThan(plainGain);
+  });
 });

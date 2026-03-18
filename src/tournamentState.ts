@@ -46,6 +46,8 @@ export function recordGameResult(
 
   const isTie = scoreA === scoreB;
   const winnerIsA = scoreA > scoreB;
+  const seedA = context?.seedA ?? teamA.seed;
+  const seedB = context?.seedB ?? teamB.seed;
   const fullContext: GameRatingContext = {
     round: context?.round ?? 0,
     totalRounds: context?.totalRounds ?? 1,
@@ -53,6 +55,8 @@ export function recordGameResult(
     isUpset:
       context?.isUpset ??
       isRatingUpset(ratingA.rating, ratingB.rating, winnerIsA, isTie),
+    seedA,
+    seedB,
   };
 
   const [newA, newB] = updateTeamRatingsWithContext(

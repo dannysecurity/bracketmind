@@ -94,6 +94,42 @@ describe("contextualKFactor", () => {
       contextualKFactor(cold, context)
     );
   });
+
+  it("boosts K for underdog winners on rare seed upsets", () => {
+    const team = createTeamRating(1500);
+    const withoutSeeds = contextualKFactor(
+      team,
+      gameContext({ round: 0, totalRounds: 3, isUpset: true })
+    );
+    const seedUpset = contextualKFactor(team, {
+      round: 0,
+      totalRounds: 3,
+      margin: 10,
+      isUpset: true,
+      seedA: 16,
+      seedB: 1,
+    });
+
+    expect(seedUpset).toBeGreaterThan(withoutSeeds);
+  });
+
+  it("dampens K when the top seed wins as expected", () => {
+    const team = createTeamRating(1500);
+    const withoutSeeds = contextualKFactor(
+      team,
+      gameContext({ round: 0, totalRounds: 3, isUpset: false })
+    );
+    const chalkWin = contextualKFactor(team, {
+      round: 0,
+      totalRounds: 3,
+      margin: 10,
+      isUpset: false,
+      seedA: 1,
+      seedB: 16,
+    });
+
+    expect(chalkWin).toBeLessThan(withoutSeeds);
+  });
 });
 
 describe("computeActualScores", () => {

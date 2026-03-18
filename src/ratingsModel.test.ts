@@ -40,6 +40,9 @@ describe("defaultRatingModel", () => {
       rdKRange: 0.08,
       formMomentumDecay: 0.6,
       formKRange: 0.06,
+      seedKWeight: 0.35,
+      seedKUpsetBoostMax: 0.18,
+      seedKExpectedWinDampen: 0.05,
     });
   });
 });

@@ -61,6 +61,8 @@ export function replaySeasonRatings(
       totalRounds: bracket.rounds,
       margin: Math.abs(game.scoreA - game.scoreB),
       isUpset,
+      seedA: teamA.seed,
+      seedB: teamB.seed,
     }, model);
 
     match.teamA = teamA;
