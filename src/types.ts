@@ -69,6 +69,11 @@ export interface SimulationOptions {
    * Requires both `seedA` and `seedB`.
    */
   historicalWeight?: number;
+  /**
+   * Full-bracket seed map used when teams omit official `seed` values.
+   * Rating-derived seeds from `buildSeedMap` enable historical blending in simulations.
+   */
+  bracketSeeds?: ReadonlyMap<string, number>;
 }
 
 export interface BracketSimulationOptions {
@@ -80,7 +85,7 @@ export interface BracketSimulationOptions {
   ratingModel?: RatingModel;
   /**
    * Weight (0–1) for NCAA historical seed upset rates when blending with Elo.
-   * Requires teams to carry official seeds (or explicit seed overrides per game).
+   * Uses official team seeds or rating-derived seeds from the bracket.
    */
   historicalWeight?: number;
   /**

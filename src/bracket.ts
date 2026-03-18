@@ -5,6 +5,7 @@ import { withPriorGamesPlayed } from "./models/teamRating.js";
 import { matchIndex } from "./bracket/layout.js";
 import { advanceWinner } from "./domain/advanceWinner.js";
 import { buildBracket } from "./domain/buildBracket.js";
+import { buildSeedMap } from "./probability/seeds.js";
 import type { Bracket, BracketSimulationOptions, Team } from "./types.js";
 import { isByeTeam } from "./types.js";
 
@@ -23,6 +24,10 @@ export function simulateBracket(
   const tournamentState = options.dynamicRatings
     ? createTournamentState(working.teams)
     : undefined;
+  const bracketSeeds =
+    options.historicalWeight !== undefined && options.historicalWeight > 0
+      ? buildSeedMap(working.teams)
+      : undefined;
 
   if (tournamentState && options.priorGamesPlayed) {
     const model = options.ratingModel;
@@ -60,6 +65,7 @@ export function simulateBracket(
           totalRounds: working.rounds,
           ratingModel: options.ratingModel,
           historicalWeight: options.historicalWeight,
+          bracketSeeds,
         });
         match.winner = result.winner;
         match.scoreA = result.scoreA;

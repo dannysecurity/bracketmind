@@ -5,19 +5,31 @@ export interface ResolvedMatchupSeeds {
   seedB?: number;
 }
 
+export type SeedResolutionOptions = SimulationOptions;
+
+function seedForTeam(
+  team: Team,
+  options: SeedResolutionOptions
+): number | undefined {
+  return (
+    options.bracketSeeds?.get(team.id) ??
+    team.seed
+  );
+}
+
 /**
  * Resolve tournament seeds for a head-to-head matchup.
  *
- * Explicit `seedA` / `seedB` in options take precedence over `team.seed`.
- * Returns only seeds that are fully known for both sides.
+ * Explicit `seedA` / `seedB` in options take precedence over `team.seed`
+ * and `bracketSeeds`. Returns only seeds that are fully known for both sides.
  */
 export function resolveMatchupSeeds(
   teamA: Team,
   teamB: Team,
-  options: SimulationOptions = {}
+  options: SeedResolutionOptions = {}
 ): ResolvedMatchupSeeds {
-  const seedA = options.seedA ?? teamA.seed;
-  const seedB = options.seedB ?? teamB.seed;
+  const seedA = options.seedA ?? seedForTeam(teamA, options);
+  const seedB = options.seedB ?? seedForTeam(teamB, options);
 
   if (seedA === undefined || seedB === undefined) {
     return {};
@@ -32,7 +44,7 @@ export function resolveMatchupSeeds(
 export function withResolvedSeeds(
   teamA: Team,
   teamB: Team,
-  options: SimulationOptions = {}
+  options: SeedResolutionOptions = {}
 ): SimulationOptions {
   const { seedA, seedB } = resolveMatchupSeeds(teamA, teamB, options);
 

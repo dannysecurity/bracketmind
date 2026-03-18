@@ -38,6 +38,7 @@ import {
 } from "./display/renderSeason.js";
 import { renderSeedingsSection } from "./display/renderSeedings.js";
 import { renderUpsetsSection } from "./display/renderUpsets.js";
+import { renderUpsetIndexSection } from "./display/renderUpsetIndex.js";
 import { parseSeasonFile } from "./season/parseSeason.js";
 import {
   analyzeSeasonUpsets,
@@ -569,6 +570,25 @@ export function runCli(args: string[]): void {
       break;
     }
 
+    case "chalk": {
+      const { names, color, historicalWeight } = parseUpsetsArgs(args);
+      if (names.length < 2) {
+        console.error(
+          "Usage: bracketmind chalk <team1> <team2> [...] [--historical-weight 0-1] [--no-color]"
+        );
+        process.exit(1);
+      }
+
+      const teams = parseTeams(names);
+      for (const line of renderUpsetIndexSection(teams, {
+        ...color,
+        historicalWeight,
+      })) {
+        console.log(line);
+      }
+      break;
+    }
+
     case "serve": {
       const port = parseServeArgs(args);
       startServer(port);
@@ -782,6 +802,8 @@ Commands:
                                    Show rating-based seeds and round 1 upset odds
   upsets <teams...> [--historical-weight 0-1] [--no-color]
                                    Analyze upset probabilities for every round
+  chalk <teams...> [--historical-weight 0-1] [--no-color]
+                                   Tournament chalk index and seed-line upset volatility
   import season <path.json|@fixture-id> [--format list|tree] [--no-color]
                                    Load a historical season fixture and display results
   import info <path.json|@fixture-id> [--no-color]
@@ -815,6 +837,7 @@ Examples:
   bracketmind predict Duke Kansas UConn --iterations 5000
   bracketmind seedings Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
   bracketmind upsets Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
+  bracketmind chalk Duke:1650 Kansas:1600 UConn:1550 Purdue:1500
   bracketmind import season fixtures/seasons/2024-east-mini.json --format tree
   bracketmind import info @2023-east-mini
   bracketmind import season @2024-south-region --format tree

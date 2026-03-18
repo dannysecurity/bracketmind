@@ -372,6 +372,32 @@ describe("runCli", () => {
     expect(stderr).toContain("Usage:");
   });
 
+  it("prints tournament chalk index and seed-line vulnerability", () => {
+    const { stdout } = captureOutput(() => {
+      runCli([
+        "chalk",
+        "Duke:1650",
+        "Kansas:1600",
+        "UConn:1550",
+        "Purdue:1500",
+        "--no-color",
+      ]);
+    });
+
+    expect(stdout).toContain("Tournament Upset Index");
+    expect(stdout).toContain("Chalk index:");
+    expect(stdout).toContain("Seed-Line Vulnerability");
+  });
+
+  it("exits with usage when chalk has too few teams", () => {
+    const { exitCode, stderr } = captureOutput(() => {
+      runCli(["chalk", "Alpha"]);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr).toContain("Usage:");
+  });
+
   it("imports and displays a historical season fixture", () => {
     const { stdout } = captureOutput(() => {
       runCli([

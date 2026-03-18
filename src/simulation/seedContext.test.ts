@@ -38,6 +38,32 @@ describe("resolveMatchupSeeds", () => {
     );
   });
 
+  it("falls back to bracket seed map when team seeds are omitted", () => {
+    const bracketSeeds = new Map([
+      ["a", 1],
+      ["b", 16],
+    ]);
+
+    expect(
+      resolveMatchupSeeds(team("A", 1500), team("B", 1500), { bracketSeeds })
+    ).toEqual({ seedA: 1, seedB: 16 });
+  });
+
+  it("prefers explicit option seeds over bracket seed map entries", () => {
+    const bracketSeeds = new Map([
+      ["a", 5],
+      ["b", 12],
+    ]);
+
+    expect(
+      resolveMatchupSeeds(team("A", 1500), team("B", 1500), {
+        bracketSeeds,
+        seedA: 1,
+        seedB: 16,
+      })
+    ).toEqual({ seedA: 1, seedB: 16 });
+  });
+
   it("allows partial seed overrides when the other side has a team seed", () => {
     expect(
       resolveMatchupSeeds(team("A", 1500), team("B", 1500, 16), {

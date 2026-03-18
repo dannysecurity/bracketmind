@@ -1,3 +1,11 @@
+export {
+  computeTournamentUpsetIndex,
+} from "./upsetIndex.js";
+export type {
+  RoundUpsetExposure,
+  SeedLineExposure,
+  TournamentUpsetIndex,
+} from "./upsetIndex.js";
 export { analyzeUpsetLandscape, mostLikelyUpsetCandidate } from "./analytics.js";
 export type {
   RoundUpsetSummary,

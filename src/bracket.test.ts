@@ -140,4 +140,35 @@ describe("bracket", () => {
     expect(roundOneWinner(blended)).toBe("uva");
     expect(roundOneWinner(pureElo)).toBe("umbc");
   });
+
+  it("applies historical upset blending from rating-derived bracket seeds", () => {
+    const names = ["Favorite:1700"];
+    for (let seed = 2; seed <= 15; seed++) {
+      names.push(`T${seed}:${1700 - seed * 5}`);
+    }
+    names.push("Underdog:1450");
+
+    const bracket = createBracket(parseTeams(names));
+    const rngValues = [0.85, 0.5, 0.5, 0.5];
+    let index = 0;
+    const rng = () => rngValues[index++ % rngValues.length];
+
+    const blended = simulateBracket(bracket, { rng, historicalWeight: 1 });
+    index = 0;
+    const pureElo = simulateBracket(bracket, { rng });
+
+    const marqueeMatch = (result: ReturnType<typeof simulateBracket>) =>
+      result.matches.find(
+        (match) =>
+          match.round === 0 &&
+          match.teamA &&
+          match.teamB &&
+          match.teamA.name !== "BYE" &&
+          match.teamB.name !== "BYE" &&
+          (match.teamA.name === "Favorite" || match.teamB.name === "Favorite")
+      )?.winner?.name;
+
+    expect(marqueeMatch(blended)).toBe("Favorite");
+    expect(marqueeMatch(pureElo)).toBe("Underdog");
+  });
 });

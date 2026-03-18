@@ -8,6 +8,7 @@ export {
   resolveMatchupSeeds,
   withResolvedSeeds,
   type ResolvedMatchupSeeds,
+  type SeedResolutionOptions,
 } from "./seedContext.js";
 export { createSeededRng } from "./rng.js";
 export { resolveSimulationRoundContext } from "./roundContext.js";
