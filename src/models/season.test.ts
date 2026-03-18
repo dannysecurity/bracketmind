@@ -70,6 +70,26 @@ describe("recorded game validation", () => {
     ).not.toThrow();
   });
 
+  it("rejects games where both participants share the same team id", () => {
+    expect(() =>
+      validateRecordedGames(
+        [
+          {
+            round: 0,
+            slot: 0,
+            teamAId: "a",
+            teamBId: "a",
+            scoreA: 70,
+            scoreB: 60,
+            winnerId: "a",
+          },
+        ],
+        teamIds,
+        seededField.length
+      )
+    ).toThrow(/must be different/);
+  });
+
   it("rejects winners that did not outscore the loser", () => {
     expect(() =>
       validateRecordedGames(

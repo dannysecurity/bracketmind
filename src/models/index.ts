@@ -10,6 +10,7 @@ export {
   gameParticipantsOf,
   isWinnerTeamA,
   sameBracketSlot,
+  validateGameParticipants,
   validateGameResult,
   winnerAndLoserScores,
 } from "./game.js";

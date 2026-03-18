@@ -1,4 +1,5 @@
 import type { GameResult, RecordedGame } from "./game.js";
+import { bracketSlotOf, gameParticipantsOf } from "./game.js";
 import {
   isCompletedMatch,
   type CompletedMatch,
@@ -36,10 +37,11 @@ export function recordedGameFromMatch(match: Match): RecordedGame | undefined {
   }
 
   return {
-    round: match.round,
-    slot: match.slot,
-    teamAId: match.teamA.id,
-    teamBId: match.teamB.id,
+    ...bracketSlotOf(match),
+    ...gameParticipantsOf({
+      teamAId: match.teamA.id,
+      teamBId: match.teamB.id,
+    }),
     ...result,
   };
 }

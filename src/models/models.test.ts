@@ -5,6 +5,7 @@ import {
   gameParticipantsOf,
   isWinnerTeamA,
   sameBracketSlot,
+  validateGameParticipants,
   validateGameResult,
   winnerAndLoserScores,
 } from "./game.js";
@@ -138,6 +139,20 @@ describe("game result helpers", () => {
         winnerId: "b",
       })
     ).toEqual({ winnerScore: 72, loserScore: 65 });
+  });
+
+  it("rejects games where both sides reference the same team", () => {
+    expect(() =>
+      validateGameParticipants({ teamAId: "a", teamBId: "a" })
+    ).toThrow(/must be different/);
+
+    expect(() =>
+      validateGameResult(
+        { scoreA: 72, scoreB: 65, winnerId: "a" },
+        { teamAId: "a", teamBId: "a" },
+        "round 0, slot 0"
+      )
+    ).toThrow(/must be different.*round 0, slot 0/);
   });
 
   it("validates consistent scores and winner ids", () => {

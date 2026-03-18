@@ -59,12 +59,26 @@ export function winnerAndLoserScores(
  * Validate scores and winner id for a head-to-head result.
  * Optional context is appended to error messages (e.g. bracket coordinates).
  */
+/** Ensure a head-to-head references two different teams. */
+export function validateGameParticipants(
+  participants: GameParticipants,
+  context?: string
+): void {
+  const suffix = context ? ` in ${context}` : "";
+
+  if (participants.teamAId === participants.teamBId) {
+    throw new Error(`teamA and teamB must be different${suffix}`);
+  }
+}
+
 export function validateGameResult(
   result: GameResult,
   participants: GameParticipants,
   context?: string
 ): void {
   const suffix = context ? ` in ${context}` : "";
+
+  validateGameParticipants(participants, context);
 
   if (result.scoreA < 0 || result.scoreB < 0) {
     throw new Error(`Scores must be non-negative${suffix}`);
